@@ -1,0 +1,430 @@
+// Umrah Visa Booking Validation Utilities
+
+import { BOOKING_LIMITS, FLIGHT_NUMBER_REGEX } from './constants';
+import { Step1Data, Step2Data, Step3Data, Step4Data, Step5Data, Step6Data, Passenger, UmrahVisaMaster } from './types';
+
+export const formatFlightNumber = (value: string): string => {
+  // Remove all invalid characters and convert to uppercase
+  let cleaned = value.replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
+  
+  // Split by dash if present, otherwise treat as single string
+  const parts = cleaned.split('-');
+  
+  if (parts.length === 1) {
+    // No dash found, format as we type
+    const allChars = parts[0];
+    if (allChars.length === 0) return '';
+    if (allChars.length <= 2) return allChars;
+    // First 2 chars, then dash, then up to 4 more chars
+    const firstPart = allChars.substring(0, 2);
+    const secondPart = allChars.substring(2, 6); // Max 4 chars
+    return secondPart.length > 0 ? `${firstPart}-${secondPart}` : `${firstPart}-`;
+  } else {
+    // Dash found, format both parts
+    const firstPart = parts[0].substring(0, 2).replace(/[^A-Z0-9]/g, '');
+    const secondPart = parts.slice(1).join('').substring(0, 4).replace(/[^A-Z0-9]/g, '');
+    
+    if (firstPart.length === 0) return '';
+    if (firstPart.length < 2) return firstPart + (secondPart.length > 0 ? '-' + secondPart : '-');
+    return secondPart.length > 0 ? `${firstPart}-${secondPart}` : `${firstPart}-`;
+  }
+};
+
+export const calculateDuration = (arrival: string, departure: string) => {
+  if (!arrival || !departure) return { days: 0, error: '' };
+
+  const arrivalDate = new Date(arrival);
+  const departureDate = new Date(departure);
+  
+  if (departureDate <= arrivalDate) {
+    return { days: 0, error: 'Departure date must be after arrival date' };
+  }
+  
+  const diffTime = departureDate.getTime() - arrivalDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays > BOOKING_LIMITS.MAX_TRAVEL_DAYS) {
+    return { 
+      days: diffDays, 
+      error: `Travel duration (${diffDays} days) exceeds the maximum limit of ${BOOKING_LIMITS.MAX_TRAVEL_DAYS} days` 
+    };
+  }
+  
+  return { days: diffDays, error: '' };
+};
+
+export const calculateHotelCoverage = (arrivalDate: string, departureDate: string, hotelBookings: any[]) => {
+  if (!arrivalDate || !departureDate || !hotelBookings || hotelBookings.length === 0) {
+    return { totalCovered: 0, uncoveredDates: [], remainingDays: 0, totalBookedDays: 0 };
+  }
+
+  const arrival = new Date(arrivalDate);
+  const departure = new Date(departureDate);
+  const allDates: string[] = [];
+  
+  const currentDate = new Date(arrival);
+  while (currentDate < departure) {
+    allDates.push(currentDate.toISOString().split('T')[0]);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  const coveredDates = new Set<string>();
+  let totalBookedDays = 0; // Total days booked across all hotels (may exceed trip duration)
+  
+  hotelBookings.forEach(booking => {
+    if (booking.checkInDate && booking.checkOutDate) {
+      const checkIn = new Date(booking.checkInDate);
+      const checkOut = new Date(booking.checkOutDate);
+      const current = new Date(checkIn);
+      
+      // Calculate total booked days for this hotel
+      let hotelDays = 0;
+      while (current < checkOut) {
+        const dateStr = current.toISOString().split('T')[0];
+        coveredDates.add(dateStr);
+        hotelDays++;
+        current.setDate(current.getDate() + 1);
+      }
+      totalBookedDays += hotelDays;
+    }
+  });
+
+  const uncoveredDates = allDates.filter(date => !coveredDates.has(date));
+  
+  return {
+    totalCovered: coveredDates.size,
+    uncoveredDates,
+    remainingDays: uncoveredDates.length,
+    totalBookedDays, // Total days booked (may exceed trip duration)
+  };
+};
+
+export const validateStep1 = (data: Step1Data): string | null => {
+  if (data.bookingMode === 'group_number') {
+    if (!data.groupNumber?.trim()) {
+      return 'Group number is required for group booking mode';
+    }
+    if (!data.groupName?.trim()) {
+      return 'Group name is required for group booking mode';
+    }
+    if (!data.umrahVisaProviderId) {
+      return 'Umrah visa providing company is required';
+    }
+  }
+  return null;
+};
+
+export const validateStep2 = (data: Step2Data, airports: any[], step1Data?: Step1Data, umrahVisaMaster?: UmrahVisaMaster): string | null => {
+  if (!data.arrivalDate || !data.arrivalTime || !data.arrivalAirportId || !data.arrivalFlightNumber) {
+    return 'Please fill in all required arrival details';
+  }
+
+  if (!data.departureDate || !data.departureTime || !data.departureAirportId || !data.departureFlightNumber) {
+    return 'Please fill in all required departure details';
+  }
+
+  // Passenger count is required in Step 2 for both individual and group bookings
+  if (!data.passengerCount || data.passengerCount < 1) {
+    return 'Number of passengers (pax) is required and must be at least 1';
+  }
+
+  if (!FLIGHT_NUMBER_REGEX.test(data.arrivalFlightNumber)) {
+    return 'Arrival flight number must be in format: XX-XXXX (2 alphanumeric, dash, 1-4 alphanumeric)';
+  }
+
+  if (!FLIGHT_NUMBER_REGEX.test(data.departureFlightNumber)) {
+    return 'Departure flight number must be in format: XX-XXXX (2 alphanumeric, dash, 1-4 alphanumeric)';
+  }
+
+  const durationResult = calculateDuration(data.arrivalDate, data.departureDate);
+  if (durationResult.error) {
+    return durationResult.error;
+  }
+
+  // Validate against Umrah visa master dates
+  if (umrahVisaMaster) {
+    const arrivalDate = new Date(data.arrivalDate);
+    const departureDate = new Date(data.departureDate);
+    const lastArrivalDate = new Date(umrahVisaMaster.lastArrivalDate);
+    const lastDepartureDate = new Date(umrahVisaMaster.lastDepartureDate);
+
+    if (arrivalDate > lastArrivalDate) {
+      return `Final Date of Umra Visa Arrival is ${umrahVisaMaster.lastArrivalDate}`;
+    }
+
+    if (departureDate > lastDepartureDate) {
+      return `Final Date of Umra Visa Departure is ${umrahVisaMaster.lastDepartureDate}`;
+    }
+  }
+
+  // Hotel bookings validation for group bookings (hotels moved to Step 2)
+  if (data.hotelBookings && data.hotelBookings.length > 0) {
+    const arrival = new Date(data.arrivalDate);
+    const departure = new Date(data.departureDate);
+    
+    for (const booking of data.hotelBookings) {
+      if (!booking.cityId || !booking.hotelId || !booking.checkInDate || !booking.checkOutDate) {
+        return 'Please fill in all hotel booking details';
+      }
+      
+      const checkIn = new Date(booking.checkInDate);
+      const checkOut = new Date(booking.checkOutDate);
+      
+      // Check-out must be after check-in
+      if (checkOut <= checkIn) {
+        return 'Check-out date must be after check-in date';
+      }
+      
+      // Check-in must not be before arrival date
+      if (checkIn < arrival) {
+        return `Hotel check-in date (${booking.checkInDate}) cannot be before arrival date (${data.arrivalDate})`;
+      }
+      
+      // Check-out must not be after departure date
+      if (checkOut > departure) {
+        return `Hotel check-out date (${booking.checkOutDate}) cannot be after departure date (${data.departureDate})`;
+      }
+    }
+
+    const coverage = calculateHotelCoverage(data.arrivalDate, data.departureDate, data.hotelBookings);
+    if (coverage.remainingDays > 0) {
+      return `You have ${coverage.remainingDays} day${coverage.remainingDays > 1 ? 's' : ''} without accommodation coverage`;
+    }
+  }
+
+  return null;
+};
+
+export const validateStep3 = (
+  data: Step3Data, 
+  arrivalDate: string, 
+  departureDate: string, 
+  step2Data?: { passengerCount?: number; arrivalAirportId?: string },
+  locationMasters?: any[]
+): string | null => {
+  // Check if this is an individual booking (has accommodationType) or group booking (has transport selections)
+  const isIndividualBooking = !!data.accommodationType;
+  const isGroupBooking = !isIndividualBooking && (data.selectedTransports !== undefined || data.selectedTransport !== undefined);
+
+  // For group bookings: Step 3 is transport vehicle selection
+  if (isGroupBooking) {
+    // Check if arrival airport is Jeddah or Madinah - transport is mandatory
+    if (step2Data?.arrivalAirportId && locationMasters) {
+      const arrivalAirport = locationMasters.find(
+        (lm: any) => lm.id === step2Data.arrivalAirportId && lm.locationType === 'AIRPORT'
+      );
+      if (arrivalAirport) {
+        const airportCity = (arrivalAirport.city || arrivalAirport.cityMaster?.name || '').toLowerCase().trim();
+        const isJeddahOrMadinah = 
+          airportCity.includes('jeddah') || 
+          airportCity.includes('madinah') || 
+          airportCity.includes('madina') || 
+          airportCity.includes('medina');
+        
+        if (isJeddahOrMadinah && !data.selectedTransports && !data.selectedTransport) {
+          return 'Transport is mandatory for arrivals at Jeddah or Madinah airports. Please select at least one transport vehicle.';
+        }
+      }
+    }
+
+    // Validate transport selection
+    if (!data.selectedTransports && !data.selectedTransport) {
+      return 'Please select at least one transport vehicle';
+    }
+
+    if (data.selectedTransports && data.selectedTransports.length > 0) {
+      for (const transport of data.selectedTransports) {
+        if (!transport.routeId || !transport.transportId || !transport.vehicleTypeId) {
+          return 'Please complete all transport selections';
+      }
+        if (transport.quantity && transport.quantity < 1) {
+          return 'Transport quantity must be at least 1';
+        }
+      }
+    } else if (data.selectedTransport) {
+      if (!data.selectedTransport.routeId || !data.selectedTransport.transportId || !data.selectedTransport.vehicleTypeId) {
+        return 'Please complete transport selection';
+      }
+    }
+    return null; // Group booking validation complete
+  }
+
+  // For individual bookings: Step 3 is accommodation details only (no movement segments needed)
+  if (isIndividualBooking) {
+    if (data.accommodationType === 'iqama') {
+      // Validate passenger count for iqama (max 5)
+      const passengerCount = step2Data?.passengerCount;
+      if (passengerCount && passengerCount > 5) {
+        return `Iqama accommodation is only allowed for up to 5 passengers. You have ${passengerCount} passengers.`;
+      }
+      
+      if (!data.iqamaDetails?.iqamaNumber || !data.iqamaDetails?.iqamaName) {
+        return 'Please fill in all required iqama details';
+      }
+      if (!data.iqamaDetails?.iqamaNationalShortAddress?.trim()) {
+        return 'National short address is required for iqama accommodation';
+      }
+    } else if (data.hotelBookings && data.hotelBookings.length > 0) {
+      // Individual booking with hotels in step 3 (backward compatibility)
+      for (const booking of data.hotelBookings) {
+        if (!booking.cityId || !booking.hotelId || !booking.checkInDate || !booking.checkOutDate) {
+          return 'Please fill in all hotel booking details';
+        }
+        
+        const checkIn = new Date(booking.checkInDate);
+        const checkOut = new Date(booking.checkOutDate);
+        
+        if (checkOut <= checkIn) {
+          return 'Check-out date must be after check-in date';
+        }
+      }
+
+      // Note: Hotel coverage validation (all days covered) is NOT required for individual bookings
+      // Individual bookings don't need to cover all days between arrival and departure
+
+      // Ziyarah basic validations
+      if (data.ziyarah && data.ziyarah.length) {
+        for (const z of data.ziyarah) {
+          if (!z.date) continue;
+          const d = new Date(z.date + 'T00:00:00');
+          // 5 = Friday when using getUTCDay with date-only baseline
+          if (d.getUTCDay() === 5) {
+            return `${z.city} Ziyarah cannot be scheduled on Friday. Please adjust the date.`;
+          }
+          if (departureDate && z.date === departureDate) {
+            return `${z.city} Ziyarah collides with departure date. Please choose another day.`;
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+export const validateStep4 = (
+  data: Step4Data, 
+  arrivalDate?: string,
+  departureDate?: string,
+  ziyarathCounts?: { [date: string]: number }
+): string | null => {
+  // Step 4: Movement Details (for group bookings)
+  // Validate movements array
+  
+  // Check if this is a group booking (has movements)
+  const isGroupBooking = data.movements !== undefined;
+  
+  if (isGroupBooking) {
+    // Validate unified movements array
+    if (!data.movements || data.movements.length === 0) {
+      return 'Please add movements. Select transport routes in Step 3 to auto-generate, or add manually.';
+  }
+  
+    // Validate each movement
+    for (const movement of data.movements) {
+      if (!movement.fromLocationId || !movement.toLocationId) {
+        return 'Please fill in from and to locations for all movements';
+      }
+      if (!movement.date) {
+        return 'Date is required for all movements';
+      }
+      if (!movement.time) {
+        return 'Time is required for all movements';
+      }
+    }
+
+    // Validate ziyarath counts if counts are provided
+    if (ziyarathCounts) {
+      const ziyarathMovements = data.movements.filter(m => m.type === 'ziyarath' && m.date);
+      for (const movement of ziyarathMovements) {
+        const date = movement.date!;
+        const count = ziyarathCounts[date] || 0;
+        if (count >= 10) {
+          return `Date ${date} has reached the maximum limit of 10 ziyaraths. Please choose another date.`;
+        }
+      }
+    }
+
+    return null; // Group booking validation complete
+  }
+  
+  // For individual bookings, Step4Data might not have movements
+  // (Individual bookings use different flow)
+  return null;
+};
+
+// For group bookings: Step 5 is documents
+export const validateStep5 = (data: Step5Data, step1Data: Step1Data, step3Data: Step3Data, isGroupVisa: boolean = false): string | null => {
+  // For both group and individual bookings: ONLY ZIP file is required
+  const zipFile = data.panCardZipFile;
+  if (!zipFile) {
+    return 'Please upload a ZIP file containing all required documents';
+  }
+
+  // Validate ZIP file type
+  const isValidZip = zipFile.type === 'application/zip' || zipFile.name.toLowerCase().endsWith('.zip');
+  if (!isValidZip) {
+    return 'Please upload a valid ZIP file (.zip)';
+  }
+
+  // Validate ZIP file size (max 50MB)
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if (zipFile.size > maxSize) {
+    return 'ZIP file size exceeds 50MB limit. Please compress your files.';
+  }
+  
+  return null; // All validations passed
+};
+
+// For individual bookings: Step 5 is movement details
+export const validateStep5Movements = (
+  data: Step5Data, 
+  step1Data: Step1Data, 
+  step2Data: Step2Data,
+  step3Data: Step3Data, 
+  step4Data: Step4Data,
+  locationMasters: any[]
+): string | null => {
+  // Validate movements array
+  if (!data.movements || data.movements.length === 0) {
+    return 'Please add movements. Select transport routes in Step 4 to auto-generate, or add manually.';
+  }
+
+  // Validate each movement
+  for (const movement of data.movements) {
+    if (!movement.fromLocationId || !movement.toLocationId) {
+      return 'Please fill in from and to locations for all movements';
+    }
+    if (!movement.date) {
+      return 'Date is required for all movements';
+    }
+    if (!movement.time) {
+      return 'Time is required for all movements';
+    }
+  }
+  
+  return null; // All validations passed
+};
+
+// For individual bookings: Step 6 is documents
+export const validateStep6 = (data: Step6Data, step1Data: Step1Data, step3Data: Step3Data, isGroupVisa: boolean = false): string | null => {
+  // ONLY ZIP file is required
+  const zipFile = data?.panCardZipFile;
+  if (!zipFile) {
+    return 'Please upload a ZIP file containing all required documents';
+  }
+
+  // Validate ZIP file type
+  const isValidZip = zipFile.type === 'application/zip' || zipFile.name.toLowerCase().endsWith('.zip');
+  if (!isValidZip) {
+    return 'Please upload a valid ZIP file (.zip)';
+  }
+
+  // Validate ZIP file size (max 50MB)
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  if (zipFile.size > maxSize) {
+    return 'ZIP file size exceeds 50MB limit. Please compress your files.';
+  }
+  
+  return null; // All validations passed
+};

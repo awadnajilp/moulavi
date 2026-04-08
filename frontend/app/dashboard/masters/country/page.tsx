@@ -1,0 +1,377 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { toast } from 'sonner';
+import { getUser, hasRole } from '@/lib/auth';
+import { useCountryMaster } from '@/hooks/useCountryMaster';
+import CountryStatsCards from '@/components/country/CountryStatsCards';
+import CountryTable from '@/components/CountryTable';
+import CountryForm from '@/components/country/CountryForm';
+import DeleteConfirmationDialog from '@/components/DeleteConfirmationDialog';
+import { currencyMasterAPI, countryMasterAPI } from '@/lib/api';
+import { Plus, Trash2, Download } from 'lucide-react';
+import { CountryMaster, CreateCountryMasterRequest } from '@/types';
+
+export default function CountryMasterPage() {
+  const router = useRouter();
+  const user = getUser();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingCountry, setEditingCountry] = useState<CountryMaster | null>(null);
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState<{
+    open: boolean;
+    loading: boolean;
+  }>({
+    open: false,
+    loading: false
+  });
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [formData, setFormData] = useState<CreateCountryMasterRequest>({
+    countryCode: '',
+    countryName: '',
+    currencyCode: ''
+  });
+  const [currencies, setCurrencies] = useState<any[]>([]);
+
+  const {
+    countries,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filteredCountries,
+    loadCountries
+  } = useCountryMaster();
+
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const response = await currencyMasterAPI.getActive();
+        const currencies = response.data?.data?.currencyMasters || response.data?.currencyMasters || response.data || [];
+        const currencyArray = Array.isArray(currencies) ? currencies : [];
+        setCurrencies(currencyArray);
+      } catch (error: any) {
+        console.error('Error loading currencies:', error);
+        toast.error('Failed to load currencies. Please check if currencies are seeded.');
+        setCurrencies([]);
+      }
+    };
+    if (user && hasRole(['admin', 'staff'])) {
+      loadCurrencies();
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.countryCode || !formData.countryName || !formData.currencyCode) {
+      return;
+    }
+    
+    try {
+      if (editingCountry) {
+        await countryMasterAPI.update(editingCountry.id, formData);
+        handleCountryUpdated();
+      } else {
+        await countryMasterAPI.create(formData);
+        handleCountryCreated();
+      }
+    } catch (error: any) {
+      console.error('Error saving country:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to save country';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleCountryCreated = () => {
+    setShowCreateForm(false);
+    setEditingCountry(null);
+    toast.success('Country created successfully!');
+    loadCountries();
+  };
+
+  const handleCountryUpdated = () => {
+    setEditingCountry(null);
+    setShowCreateForm(false);
+    toast.success('Country updated successfully!');
+    loadCountries();
+  };
+
+  const handleEdit = (country: CountryMaster) => {
+    setEditingCountry(country);
+    setFormData({
+      countryCode: country.countryCode,
+      countryName: country.countryName,
+      currencyCode: country.currencyCode,
+    });
+    setShowCreateForm(true);
+  };
+
+  const handleSelectCountry = (countryId: string) => {
+    setSelectedCountries(prev => 
+      prev.includes(countryId) 
+        ? prev.filter(id => id !== countryId)
+        : [...prev, countryId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCountries.length === filteredCountries.length) {
+      setSelectedCountries([]);
+    } else {
+      setSelectedCountries(filteredCountries.map(country => country.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCountries.length === 0) {
+      toast.error('Please select countries to delete');
+      return false;
+    }
+
+    try {
+      for (const countryId of selectedCountries) {
+        try {
+          await countryMasterAPI.delete(countryId);
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to delete country';
+          toast.error(errorMessage);
+        }
+      }
+      setSelectedCountries([]);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const handleBulkDeleteClick = () => {
+    if (selectedCountries.length === 0) {
+      toast.error('Please select countries to delete');
+      return;
+    }
+
+    setBulkDeleteDialog({
+      open: true,
+      loading: false
+    });
+  };
+
+  const confirmBulkDelete = async () => {
+    setBulkDeleteDialog(prev => ({ ...prev, loading: true }));
+
+    const success = await handleBulkDelete();
+    if (success) {
+      toast.success(`${selectedCountries.length} country(s) deleted successfully!`);
+      setBulkDeleteDialog({ open: false, loading: false });
+      loadCountries();
+    } else {
+      setBulkDeleteDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleCountryDeleted = () => {
+    loadCountries();
+  };
+
+  const handleToggleStatus = async (country: CountryMaster) => {
+    try {
+      await countryMasterAPI.toggleStatus(country.id);
+      toast.success(`Country ${country.isActive ? 'deactivated' : 'activated'} successfully`);
+      loadCountries();
+    } catch (error) {
+      // Error handling is done by API interceptor
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      countryCode: '',
+      countryName: '',
+      currencyCode: '',
+    });
+    setEditingCountry(null);
+    setShowCreateForm(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1">
+        {/* Header Bar */}
+        <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Country Master</h1>
+              <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
+                Manage countries and nationalities
+              </p>
+            </div>
+            <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Country
+            </Button>
+          </div>
+        </div>
+
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="flex-1">
+                      <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-2" />
+                      <div className="h-6 w-12 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Country Management</CardTitle>
+              <CardDescription>
+                Manage countries and their currencies
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CountryTable
+                countries={[]}
+                loading={true}
+                searchTerm=""
+                selectedCountries={[]}
+                setSearchTerm={() => {}}
+                onSelectCountry={() => {}}
+                onSelectAll={() => {}}
+                onBulkDelete={() => {}}
+                onCountryDeleted={() => {}}
+                onEditCountry={() => {}}
+                onToggleStatus={() => {}}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Country Master</h1>
+            <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
+              Manage countries and nationalities
+            </p>
+          </div>
+          <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add Country
+          </Button>
+        </div>
+      </div>
+
+      <div className="p-4 lg:p-8 space-y-6">
+        {/* Stats Cards */}
+        <CountryStatsCards countries={countries} />
+
+        {/* Country Management */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl font-semibold">Country Management</CardTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  Manage countries and their currencies
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedCountries.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDeleteClick}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedCountries.length})
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toast.info('Export functionality coming soon')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CountryTable
+              countries={filteredCountries}
+              loading={loading}
+              searchTerm={searchTerm}
+              selectedCountries={selectedCountries}
+              setSearchTerm={setSearchTerm}
+              onSelectCountry={handleSelectCountry}
+              onSelectAll={handleSelectAll}
+              onBulkDelete={handleBulkDeleteClick}
+              onCountryDeleted={handleCountryDeleted}
+              onEditCountry={handleEdit}
+              onToggleStatus={handleToggleStatus}
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Create/Edit Form */}
+      <Sheet open={showCreateForm} onOpenChange={(open) => {
+        setShowCreateForm(open);
+        if (!open) {
+          resetForm();
+        }
+      }}>
+        <SheetContent side="right" className="w-96">
+          <SheetHeader>
+            <SheetTitle>
+              {editingCountry ? 'Edit Country' : 'Add New Country'}
+            </SheetTitle>
+            <SheetDescription>
+              {editingCountry ? 'Update country information' : 'Create a new country with its currency'}
+            </SheetDescription>
+          </SheetHeader>
+          <CountryForm
+            formData={formData}
+            editingCountry={editingCountry}
+            currencies={currencies}
+            onFormDataChange={setFormData}
+            onSubmit={handleSubmit}
+            onCancel={resetForm}
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={bulkDeleteDialog.open}
+        onOpenChange={(open) => setBulkDeleteDialog(prev => ({ ...prev, open }))}
+        title="Delete Countries"
+        message="Are you sure you want to delete the selected countries? This will permanently remove all associated data."
+        onConfirm={confirmBulkDelete}
+        loading={bulkDeleteDialog.loading}
+        type="bulk"
+        count={selectedCountries.length}
+      />
+    </div>
+  );
+}

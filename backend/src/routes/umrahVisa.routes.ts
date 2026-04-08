@@ -1,0 +1,886 @@
+
+import { Router } from 'express';
+import { authenticate, authorize } from '../middleware/auth';
+import { prisma, findCityByName } from './umrahVisa/shared';
+
+const router = Router();
+
+// GET /api/umrah-visa/bookings - Get all bookings with pagination and filters
+router.get('/bookings', authenticate, async (req, res) => {
+  try {
+    const { page = '1', limit = '10', status, partyId, search } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get the authenticated user
+    const user = (req as any).user;
+
+    const where: any = {};
+    
+    // If user is a party, automatically filter by their partyId
+    if (user && user.role === 'party') {
+      // Find the party associated with this user
+      const userParty = await prisma.party.findUnique({
+        where: { userId: user.id },
+        select: { id: true }
+      });
+      
+      if (userParty) {
+        where.partyId = userParty.id;
+      } else {
+        // If no party found for this user, return empty results
+        return res.json({
+          bookings: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+    }
+    // If admin/staff and partyId is provided, filter by that partyId
+    else if (partyId) {
+      where.partyId = partyId;
+    }
+    
+    if (status && status !== 'all') {
+      // Handle both string and array values for status
+      if (Array.isArray(status)) {
+        // If status is an array, use Prisma's 'in' operator
+        where.status = { in: status };
+      } else {
+        // If status is a single string, use it directly
+        where.status = status;
+      }
+    }
+
+    // Search by group number
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      where.groupNumber = {
+        contains: search.trim(),
+
+      };
+    }
+
+    const [bookings, total] = await Promise.all([
+      prisma.umrahVisaBooking.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          party: {
+            select: {
+              id: true,
+              partyName: true,
+              partyCode: true,
+              email: true,
+              contactNumber: true,
+            },
+          },
+          travelDetails: {
+            include: {
+              arrivalAirport: true,
+              departureAirport: true,
+            },
+          },
+          hotelBookings: {
+            include: {
+              hotel: true,
+              city: true,
+            },
+          },
+          sponsorIqamaDetails: true,
+          umrahVisaProvider: {
+            select: {
+              id: true,
+              partyName: true,
+            },
+          },
+          passengers: {
+            include: {
+              documents: true,
+            },
+          },
+          lastUpdatedByUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          documentsDownloadedByUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.umrahVisaBooking.count({ where }),
+    ]);
+
+    res.json({
+      bookings,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// GET /api/umrah-visa/ziyarath-counts - Get ziyarath counts per date
+// IMPORTANT: This route must be defined BEFORE /:bookingId to avoid route conflicts
+router.get('/ziyarath-counts', authenticate, async (req, res) => {
+  try {
+    const { dates, excludeBookingId } = req.query;
+    
+    if (!dates || typeof dates !== 'string') {
+      return res.status(400).json({ error: 'dates parameter is required (comma-separated date strings)' });
+    }
+
+    // Parse dates from comma-separated string
+    const dateArray = dates.split(',').map(d => d.trim()).filter(Boolean);
+    
+    if (dateArray.length === 0) {
+      return res.json({});
+    }
+
+    // Convert dates to Date objects and find min/max for query range
+    const dateObjects = dateArray.map(dateStr => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date format: ${dateStr}`);
+      }
+      date.setHours(0, 0, 0, 0);
+      return { date, dateStr };
+    });
+
+    if (dateObjects.length === 0) {
+      return res.json({});
+    }
+
+    const timestamps = dateObjects.map(d => d.date.getTime());
+    const minDate = new Date(Math.min(...timestamps));
+    const maxDate = new Date(Math.max(...timestamps));
+    maxDate.setHours(23, 59, 59, 999);
+
+    // Build where clause - query all ziyarath movements in the date range
+    const whereClause: any = {
+      toLocation: {
+        locationType: 'ZIYARAT',
+      },
+      travelDateTime: {
+        gte: minDate,
+        lte: maxDate,
+      },
+    };
+
+    // Exclude current booking if provided (and is a valid UUID)
+    if (excludeBookingId && typeof excludeBookingId === 'string') {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(excludeBookingId)) {
+        whereClause.bookingId = {
+          not: excludeBookingId,
+        };
+      }
+    }
+
+    // Query all ziyarath movements for the date range
+    const movements = await prisma.umrahMovementDetail.findMany({
+      where: whereClause,
+      select: {
+        travelDateTime: true,
+      },
+    });
+
+    // Count ziyaraths per date (only for requested dates)
+    const counts: { [date: string]: number } = {};
+    
+    // Initialize all requested dates with 0
+    dateArray.forEach(dateStr => {
+      counts[dateStr] = 0;
+    });
+
+    // Count movements by date (only count if date matches one of the requested dates)
+    movements.forEach(movement => {
+      // Extract date in YYYY-MM-DD format, handling timezone correctly
+      const date = new Date(movement.travelDateTime);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      if (counts.hasOwnProperty(dateStr)) {
+        counts[dateStr] = (counts[dateStr] || 0) + 1;
+      }
+    });
+
+    res.json(counts);
+  } catch (error) {
+    console.error('Error fetching ziyarath counts:', error);
+    res.status(500).json({ error: 'Failed to fetch ziyarath counts' });
+  }
+});
+
+// GET /api/umrah-visa/:bookingId - Get complete booking details
+router.get('/:bookingId', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(bookingId)) {
+      return res.status(400).json({ error: 'Invalid booking ID format' });
+    }
+
+    const booking = await prisma.umrahVisaBooking.findUnique({
+      where: { id: bookingId },
+      include: {
+        party: true,
+        travelDetails: {
+          include: {
+            arrivalAirport: true,
+            departureAirport: true,
+          },
+        },
+        hotelBookings: {
+          include: {
+            city: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            hotel: {
+              select: {
+                id: true,
+                name: true,
+                city: true,
+                cityId: true,
+                locationType: true,
+              },
+            },
+          },
+          orderBy: {
+            checkInDate: 'asc',
+          },
+        },
+        sponsorIqamaDetails: true,
+        transportBookings: {
+          include: {
+            transportMaster: {
+              include: {
+                route: {
+                  include: {
+                    city1: true,
+                    city2: true,
+                    city3: true,
+                    city4: true,
+                  },
+                },
+                vehicleType: true,
+              },
+            },
+          },
+        },
+        movementDetails: {
+          include: {
+            fromCity: true,
+            fromLocation: {
+              select: {
+                id: true,
+                name: true,
+                locationType: true,
+                city: true,
+                cityId: true,
+              },
+            },
+            toCity: true,
+            toLocation: {
+              select: {
+                id: true,
+                name: true,
+                locationType: true,
+                city: true,
+                cityId: true,
+              },
+            },
+          },
+          orderBy: {
+            travelDateTime: 'asc',
+          },
+        },
+        passengers: {
+          include: {
+            documents: true,
+          },
+        },
+        statusHistory: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            changedAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    res.json(booking);
+  } catch (error) {
+    console.error('Error fetching booking:', error);
+    res.status(500).json({ error: 'Failed to fetch booking' });
+  }
+});
+
+// GET /api/umrah-visa/:bookingId/voucher - Get voucher for party users by booking ID
+router.get('/:bookingId/voucher', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const user = (req as any).user;
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(bookingId)) {
+      return res.status(400).json({ error: 'Invalid booking ID format' });
+    }
+
+    // Get booking to verify ownership and get group number
+    const booking = await prisma.umrahVisaBooking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        partyId: true,
+        groupNumber: true,
+        groupName: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Verify ownership for party users
+    if (user.role === 'party') {
+      const userParty = await prisma.party.findUnique({
+        where: { userId: user.id },
+      });
+      
+      if (!userParty || booking.partyId !== userParty.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Find voucher by groupCode (groupNumber)
+    if (!booking.groupNumber) {
+      return res.status(404).json({ error: 'Voucher not found - no group number assigned' });
+    }
+
+    const voucher = await prisma.voucher.findFirst({
+      where: {
+        groupCode: {
+          contains: booking.groupNumber,
+
+        },
+      },
+      include: {
+        movements: {
+          orderBy: {
+            sr: 'asc',
+          },
+        },
+        hotels: {
+          orderBy: {
+            number: 'asc',
+          },
+        },
+        flights: {
+          orderBy: {
+            date: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!voucher) {
+      return res.status(404).json({ error: 'Voucher not found' });
+    }
+
+    // Transform normalized data to match frontend expectations (same format as voucher routes)
+    const transformedVoucher = {
+      ...voucher,
+      hotelSchedules: voucher.hotels.map((h: any) => ({
+        number: h.number,
+        location: h.location,
+        hotelName: h.hotelName,
+        checkIn: h.checkIn ? h.checkIn.toISOString().split('T')[0] : '',
+        checkOut: h.checkOut ? h.checkOut.toISOString().split('T')[0] : '',
+        days: h.days,
+        brn: h.brn,
+      })),
+      movementDetails: voucher.movements.map((m: any) => ({
+        sr: m.sr,
+        route: m.route || '',
+        date: m.date ? m.date.toISOString().split('T')[0] : '',
+        time: m.time,
+        from: m.from,
+        fromLocation: m.fromLocation,
+        to: m.to,
+        toLocation: m.toLocation,
+      })),
+      flightDetails: voucher.flights.map((f: any) => ({
+        type: f.type,
+        carrier: f.carrier,
+        number: f.number,
+        date: f.date ? f.date.toISOString().split('T')[0] : '',
+        from: f.from,
+        to: f.to,
+        etd: f.etd,
+        eta: f.eta,
+      })),
+    };
+
+    res.json({ voucher: transformedVoucher });
+  } catch (error) {
+    console.error('Error fetching voucher:', error);
+    res.status(500).json({ error: 'Failed to fetch voucher' });
+  }
+});
+
+// GET /api/umrah-visa/transport-options/:airportId - Get transport options for airport
+router.get('/transport-options/:airportId', authenticate, async (req, res) => {
+  try {
+    const { airportId } = req.params;
+
+    // Get airport details from LocationMaster
+    const airport = await prisma.locationMaster.findUnique({
+      where: { 
+        id: airportId,
+        locationType: 'AIRPORT',
+      },
+    });
+
+    if (!airport) {
+      return res.status(404).json({ error: 'Airport not found' });
+    }
+
+    // Check if this airport requires transport selection
+    const needsTransport = ['JED', 'MED'].includes(airport.code);
+
+    if (!needsTransport) {
+      return res.json({
+        requiresTransport: false,
+        transportOptions: [],
+      });
+    }
+
+    // Find the city that matches the airport's city
+    const fromCity = await findCityByName(airport.city);
+
+    if (!fromCity) {
+      console.warn(`No city found for airport city: ${airport.city}`);
+      return res.json({
+        requiresTransport: true,
+        airport,
+        transportOptions: [],
+        message: `No city found for airport city: ${airport.city}`,
+      });
+    }
+
+    // TransportMaster has been removed - return empty transport options
+    // TODO: Implement alternative transport options retrieval if needed
+    res.json({
+      requiresTransport: true,
+      airport,
+      fromCity: fromCity,
+      transportOptions: [],
+      message: 'Transport options not available - TransportMaster has been removed',
+    });
+  } catch (error) {
+    console.error('Error fetching transport options:', error);
+    res.status(500).json({ error: 'Failed to fetch transport options' });
+  }
+});
+
+// Masters: GET destinations (locations) - Now uses LocationMaster only
+router.get('/masters/destinations', authenticate, async (req, res) => {
+  try {
+    const q = (req.query.q as string) || '';
+    
+    // Use CityMaster instead of DESTINATION locations
+    const cityRows = await prisma.cityMaster.findMany({
+      where: {
+        isActive: true,
+        ...(q ? { 
+          OR: [
+            { name: { contains: q } },
+          ]
+        } : {}),
+      },
+      orderBy: { name: 'asc' },
+      take: 100,
+      include: {
+        country: {
+          select: {
+            id: true,
+            countryCode: true,
+            countryName: true,
+          },
+        },
+      },
+    });
+    
+    // Convert to old format for backward compatibility
+    const destinations = cityRows.map(city => ({
+      id: city.id,
+      destinationCode: city.name.substring(0, 3).toUpperCase(),
+      destinationName: city.name,
+      city: city.name,
+      country: city.country?.countryName || 'Saudi Arabia',
+      isActive: city.isActive,
+      createdAt: city.createdAt,
+      updatedAt: city.updatedAt,
+    }));
+    
+    res.json({ 
+      destinations, // Backward compatible format
+      cities: cityRows, // New city master format
+    });
+  } catch (error) {
+    console.error('Error fetching destinations:', error);
+    res.status(500).json({ error: 'Failed to fetch destinations' });
+  }
+});
+
+// Masters: GET locations (unified LocationMaster - all types or filtered)
+router.get('/masters/locations', authenticate, async (req, res) => {
+  try {
+    const q = (req.query.q as string) || '';
+    const locationType = req.query.locationType as string | undefined;
+    
+    const where: any = {
+      isActive: true,
+    };
+    
+    if (locationType) {
+      where.locationType = locationType as any;
+    }
+    
+    if (q) {
+      where.OR = [
+        { name: { contains: q } },
+        { code: { contains: q } },
+        { city: { contains: q } },
+      ];
+    }
+    
+    const locations = await prisma.locationMaster.findMany({
+      where,
+      orderBy: [{ locationType: 'asc' }, { name: 'asc' }],
+      take: 100,
+      include: {
+        country: {
+          select: {
+            id: true,
+            countryCode: true,
+            countryName: true,
+          },
+        },
+      },
+    });
+    
+    res.json({ locations });
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    res.status(500).json({ error: 'Failed to fetch locations' });
+  }
+});
+
+// Masters: GET hotels by city
+router.get('/masters/hotels', authenticate, async (req, res) => {
+  try {
+    const cityId = req.query.cityId as string | undefined;
+    const q = (req.query.q as string) || '';
+    const rows = await prisma.locationMaster.findMany({
+      where: {
+        locationType: 'HOTEL',
+        isActive: true,
+        ...(cityId ? { cityId } : {}),
+        ...(q ? { name: { contains: q } } : {}),
+      },
+      orderBy: { name: 'asc' },
+      take: 100,
+      include: {
+        cityMaster: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        country: {
+          select: {
+            id: true,
+            countryCode: true,
+            countryName: true,
+          },
+        },
+      },
+    });
+    res.json({ hotels: rows });
+  } catch (error) {
+    console.error('Error fetching hotels:', error);
+    res.status(500).json({ error: 'Failed to fetch hotels' });
+  }
+});
+
+// Masters: GET airports
+router.get('/masters/airports', authenticate, async (req, res) => {
+  try {
+    const q = (req.query.q as string) || '';
+    const rows = await prisma.locationMaster.findMany({
+      where: {
+        locationType: 'AIRPORT',
+        ...(q ? { name: { contains: q } } : {}),
+      },
+      orderBy: { name: 'asc' },
+      take: 100,
+    });
+    res.json({ airports: rows });
+  } catch (error) {
+    console.error('Error fetching airports:', error);
+    res.status(500).json({ error: 'Failed to fetch airports' });
+  }
+});
+
+// Masters: GET Umrah Visa master dates
+router.get('/masters/dates', authenticate, async (req, res) => {
+  try {
+    const master = await prisma.umrahVisaMaster.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    if (!master) {
+      return res.json({ umrahVisaMaster: null });
+    }
+    
+    res.json({ 
+      umrahVisaMaster: {
+        id: master.id,
+        lastArrivalDate: master.lastArrivalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        lastDepartureDate: master.lastDepartureDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        isActive: master.isActive,
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching Umrah visa master dates:', error);
+    res.status(500).json({ error: 'Failed to fetch Umrah visa master dates' });
+  }
+});
+
+// Masters: POST/PUT Umrah Visa master dates (admin only)
+router.post('/masters/dates', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const { lastArrivalDate, lastDepartureDate } = req.body;
+    
+    if (!lastArrivalDate || !lastDepartureDate) {
+      return res.status(400).json({ error: 'Both lastArrivalDate and lastDepartureDate are required' });
+    }
+    
+    // Validate dates
+    const arrivalDate = new Date(lastArrivalDate);
+    const departureDate = new Date(lastDepartureDate);
+    
+    if (isNaN(arrivalDate.getTime()) || isNaN(departureDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+    
+    // Deactivate all existing masters
+    await prisma.umrahVisaMaster.updateMany({
+      where: { isActive: true },
+      data: { isActive: false },
+    });
+    
+    // Create new active master
+    const master = await prisma.umrahVisaMaster.create({
+      data: {
+        lastArrivalDate: arrivalDate,
+        lastDepartureDate: departureDate,
+        isActive: true,
+      },
+    });
+    
+    res.json({ 
+      umrahVisaMaster: {
+        id: master.id,
+        lastArrivalDate: master.lastArrivalDate.toISOString().split('T')[0],
+        lastDepartureDate: master.lastDepartureDate.toISOString().split('T')[0],
+        isActive: master.isActive,
+      }
+    });
+  } catch (error) {
+    console.error('Error creating/updating Umrah visa master dates:', error);
+    res.status(500).json({ error: 'Failed to create/update Umrah visa master dates' });
+  }
+});
+
+// GET /api/umrah-visa/hotels/:cityId - Get hotels by city
+router.get('/hotels/:cityId', authenticate, async (req, res) => {
+  try {
+    const { cityId } = req.params;
+
+    const hotels = await prisma.locationMaster.findMany({
+      where: {
+        cityId: cityId,
+        locationType: 'HOTEL',
+        isActive: true,
+      },
+      include: {
+        cityMaster: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        country: {
+          select: {
+            id: true,
+            countryCode: true,
+            countryName: true,
+          },
+        },
+      },
+      orderBy: [
+        { name: 'asc' },
+      ],
+    });
+
+    res.json(hotels);
+  } catch (error) {
+    console.error('Error fetching hotels:', error);
+    res.status(500).json({ error: 'Failed to fetch hotels' });
+  }
+});
+
+// POST /api/umrah-visa/seed-ziyarah-hotels - Seed Ziyarah hotels as LocationMaster entries
+router.post('/seed-ziyarah-hotels', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    // Find Makkah and Madinah cities
+    const makkahCity = await prisma.cityMaster.findFirst({
+      where: {
+        name: { in: ['Makkah', 'Mecca', 'Makkah Al Mukarramah'] },
+        isActive: true,
+      },
+    });
+
+    const madinahCity = await prisma.cityMaster.findFirst({
+      where: {
+        name: { in: ['Madinah', 'Medina', 'Al Madinah Al Munawwarah'] },
+        isActive: true,
+      },
+    });
+
+    if (!makkahCity) {
+      return res.status(404).json({ error: 'Makkah city not found. Please create it in City Master first.' });
+    }
+    if (!madinahCity) {
+      return res.status(404).json({ error: 'Madinah city not found. Please create it in City Master first.' });
+    }
+
+    // Get country for the cities
+    const makkahCountry = await prisma.countryMaster.findUnique({
+      where: { id: makkahCity.countryId },
+    });
+
+    const madinahCountry = await prisma.countryMaster.findUnique({
+      where: { id: madinahCity.countryId },
+    });
+
+    if (!makkahCountry || !madinahCountry) {
+      return res.status(404).json({ error: 'Country not found for cities' });
+    }
+
+    // Check if ziyarah hotels already exist
+    const makZiyExists = await prisma.locationMaster.findFirst({
+      where: {
+        code: 'MAK_ZIY',
+        locationType: 'HOTEL',
+      },
+    });
+
+    const madZiyExists = await prisma.locationMaster.findFirst({
+      where: {
+        code: 'MAD_ZIY',
+        locationType: 'HOTEL',
+      },
+    });
+
+    const results: any[] = [];
+
+    // Create Makkah Ziyarah if it doesn't exist
+    if (!makZiyExists) {
+      const makZiy = await prisma.locationMaster.create({
+        data: {
+          code: 'MAK_ZIY',
+          name: 'Makkah Ziyarah',
+          locationType: 'HOTEL',
+          countryId: makkahCity.countryId,
+          cityId: makkahCity.id,
+          city: makkahCity.name,
+          isActive: true,
+        },
+      });
+      results.push({ action: 'created', hotel: makZiy });
+    } else {
+      results.push({ action: 'exists', hotel: makZiyExists });
+    }
+
+    // Create Madinah Ziyarah if it doesn't exist
+    if (!madZiyExists) {
+      const madZiy = await prisma.locationMaster.create({
+        data: {
+          code: 'MAD_ZIY',
+          name: 'Madinah Ziyarah',
+          locationType: 'HOTEL',
+          countryId: madinahCity.countryId,
+          cityId: madinahCity.id,
+          city: madinahCity.name,
+          isActive: true,
+        },
+      });
+      results.push({ action: 'created', hotel: madZiy });
+    } else {
+      results.push({ action: 'exists', hotel: madZiyExists });
+    }
+
+    res.json({
+      message: 'Ziyarah hotels seeded successfully',
+      results,
+    });
+  } catch (error) {
+    console.error('Error seeding ziyarah hotels:', error);
+    res.status(500).json({ error: 'Failed to seed ziyarah hotels' });
+  }
+});
+
+export default router;
