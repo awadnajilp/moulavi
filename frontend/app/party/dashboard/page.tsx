@@ -167,7 +167,7 @@ export default function PartyDashboardPage() {
       voucher: { color: 'bg-primary/10 text-secondary border-primary/20', icon: Award, label: 'Voucher' },
       bill: { color: 'bg-gray-50 text-gray-700 border-gray-200', icon: FileText, label: 'Invoice' },
       booking_success: { color: 'bg-green-50 text-green-700 border-green-100', icon: CheckCircle, label: 'Success' },
-      cancelled: { color: 'bg-red-50 text-red-700 border-red-100', icon: XCircle, label: 'Cancelled' },
+      cancelled: { color: 'bg-destructive/5 text-destructive border-destructive/20', icon: XCircle, label: 'Cancelled' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;

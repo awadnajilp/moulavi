@@ -97,8 +97,8 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
                 isDragging
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-red-50/50'
+                  ? 'border-primary bg-destructive/5'
+                  : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-destructive/5/50'
               }`}
             >
               <input
@@ -111,7 +111,7 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
               />
               
               <div className="flex flex-col items-center justify-center space-y-4">
-                <UploadCloud className={`w-16 h-16 ${isDragging ? 'text-red-500' : 'text-gray-400'}`} />
+                <UploadCloud className={`w-16 h-16 ${isDragging ? 'text-primary' : 'text-gray-400'}`} />
                 <div>
                   <p className="text-lg font-medium text-gray-700 mb-1">
                     {isDragging ? 'Drop your ZIP file here' : 'Click to upload or drag and drop'}
@@ -142,7 +142,7 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
                   size="sm"
                   onClick={handleRemoveFile}
                   disabled={disabled}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-primary hover:text-destructive hover:bg-destructive/5"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Remove

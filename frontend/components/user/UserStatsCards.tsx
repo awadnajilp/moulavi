@@ -42,8 +42,8 @@ export default function UserStatsCards({ users }: UserStatsCardsProps) {
       title: 'Admin Users',
       value: adminUsers,
       icon: Shield,
-      color: 'bg-red-100 text-red-600',
-      bgColor: 'bg-red-50'
+      color: 'bg-red-100 text-primary',
+      bgColor: 'bg-destructive/5'
     },
     {
       title: 'Inactive Users',

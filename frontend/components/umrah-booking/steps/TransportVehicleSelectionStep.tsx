@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TransportRouteMaster, TransportMaster, RouteType } from '@/types';
+import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 interface TransportVehicleSelectionStepProps {
   data: Step3Data; // Now Step 3 is transport selection
@@ -323,205 +325,126 @@ export const TransportVehicleSelectionStep: React.FC<TransportVehicleSelectionSt
   const routeNotFound = determinedRoute.length >= 2 && !selectedRoute;
 
   return (
-    <div className="space-y-4">
-      {/* Route Summary */}
-      <div className="flex items-center space-x-3 pb-4 border-b border-gray-200">
-        <MapPin className="h-5 w-5 text-red-600" />
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Route Summary - Compact */}
+      <div className="flex items-center space-x-3 pb-3 border-b border-secondary/10">
+        <MapPin className="h-4 w-4 text-secondary" />
         <div>
-          <p className="text-sm font-medium text-gray-900">{routeDisplay}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs font-bold text-primary uppercase tracking-tight">{routeDisplay}</p>
+          <p className="text-[10px] text-muted-foreground font-medium mt-0.5 uppercase tracking-widest">
             {step2Data.passengerCount || 0} Passengers
           </p>
         </div>
       </div>
 
-      {/* Filters */}
-      {loadingRoutes ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-700">Filter by Route Type</label>
-            <Select
-              value={routeTypeFilter}
-              onValueChange={(value) => setRouteTypeFilter(value as RouteType | 'all')}
-              disabled={disabled || loadingRoutes}
-            >
-              <SelectTrigger className="w-full border-gray-300">
-                <SelectValue placeholder="Select route type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Route Types</SelectItem>
-                <SelectItem value="fulltrip">Full Trip</SelectItem>
-                <SelectItem value="airporttocity">Airport to City</SelectItem>
-                <SelectItem value="citytoairport">City to Airport</SelectItem>
-                <SelectItem value="tripandtour">Trip and Tour</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Filters - Compact */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {loadingRoutes ? (
+          <>
+            <div className="space-y-1">
+              <Skeleton className="h-2.5 w-24" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+            <div className="space-y-1">
+              <Skeleton className="h-2.5 w-20" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-primary/60 uppercase ml-1 tracking-widest">Filter by Route Type</label>
+              <Select
+                value={routeTypeFilter}
+                onValueChange={(value) => setRouteTypeFilter(value as RouteType | 'all')}
+                disabled={disabled || loadingRoutes}
+              >
+                <SelectTrigger className="h-9 rounded-lg border-gray-100 bg-white text-[10px] font-bold">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl p-1">
+                  <SelectItem value="all" className="text-[9px] font-bold p-2 uppercase">All Route Types</SelectItem>
+                  <SelectItem value="fulltrip" className="text-[9px] font-bold p-2 uppercase">Full Trip</SelectItem>
+                  <SelectItem value="airporttocity" className="text-[9px] font-bold p-2 uppercase">Airport to City</SelectItem>
+                  <SelectItem value="citytoairport" className="text-[9px] font-bold p-2 uppercase">City to Airport</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-gray-700">Select Route</label>
-            <Select
-              value={selectedRouteId || ''}
-              onValueChange={(value) => setSelectedRouteId(value || null)}
-              disabled={disabled || loadingRoutes || filteredRoutes.length === 0}
-            >
-              <SelectTrigger className="w-full border-gray-300">
-                <SelectValue placeholder="Select a route" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredRoutes.length === 0 ? (
-                  <SelectItem value="__no_routes__" disabled>
-                    No routes available
-                  </SelectItem>
-                ) : (
-                  filteredRoutes.map((route) => (
-                    <SelectItem key={route.id} value={route.id}>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-primary/60 uppercase ml-1 tracking-widest">Select Route</label>
+              <Select
+                value={selectedRouteId || ''}
+                onValueChange={(value) => setSelectedRouteId(value || null)}
+                disabled={disabled || loadingRoutes || filteredRoutes.length === 0}
+              >
+                <SelectTrigger className="h-9 rounded-lg border-gray-100 bg-white text-[10px] font-bold overflow-hidden">
+                  <SelectValue placeholder="Select a route" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl p-1 max-w-[300px]">
+                  {filteredRoutes.map((route) => (
+                    <SelectItem key={route.id} value={route.id} className="text-[9px] font-bold p-2">
                       {formatRouteDisplay(route)}
                     </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {routeNotFound && (
-              <p className="text-xs text-red-600 mt-1">
-                No exact route found. Please select a route from the dropdown above.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* Transport Table */}
+      {/* Transport Table - Ultra Compact */}
       {selectedRouteId && (
-        <>
+        <div className="animate-in fade-in slide-in-from-top-2 duration-500">
           {loadingTransports ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-5 w-5 animate-spin text-red-600" />
-              <span className="ml-2 text-sm text-gray-600">Loading transport vehicles...</span>
-            </div>
-          ) : routeTransports.length === 0 ? (
-            <div className="text-center py-8">
-              <Truck className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">No transport vehicles available for this route.</p>
-            </div>
+            <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 text-primary animate-spin" /></div>
           ) : (
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-white rounded-xl border border-secondary/10 shadow-sm overflow-hidden">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-medium text-gray-700">Vehicle Name</TableHead>
-                    <TableHead className="font-medium text-gray-700">Capacity</TableHead>
-                    <TableHead className="font-medium text-gray-700">Price</TableHead>
-                    <TableHead className="font-medium text-gray-700">Quantity</TableHead>
-                    <TableHead className="font-medium text-gray-700 text-right">Total</TableHead>
+                <TableHeader className="bg-primary/5">
+                  <TableRow className="h-8 border-b border-secondary/5">
+                    <TableHead className="px-4 text-[8px] font-bold uppercase py-0 text-primary/40">Vehicle Name</TableHead>
+                    <TableHead className="text-[8px] font-bold uppercase py-0 text-primary/40 text-center">Capacity</TableHead>
+                    <TableHead className="text-[8px] font-bold uppercase py-0 text-primary/40">Price</TableHead>
+                    <TableHead className="text-[8px] font-bold uppercase py-0 text-primary/40 text-center">Quantity</TableHead>
+                    <TableHead className="px-4 text-[8px] font-bold uppercase py-0 text-primary/40 text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    // Calculate the best recommendation: vehicle closest to passenger count
                     const passengerCount = step1Data?.passengerCount || step2Data?.passengerCount || 0;
-                    let recommendedTransportId: string | null = null;
-                    
-                    if (selectedRouteId && passengerCount > 0) {
-                      // Find vehicles that can accommodate passengers
-                      const suitableVehicles = routeTransports
-                        .filter(t => t.vehicleType && t.vehicleType.paxCount >= passengerCount && t.vehicleType.paxCount > 0)
-                        .map(t => ({
-                          id: t.id,
-                          paxCount: t.vehicleType!.paxCount,
-                          difference: t.vehicleType!.paxCount - passengerCount, // How much extra capacity
-                        }));
-                      
-                      // Select the one with smallest difference (closest match)
-                      if (suitableVehicles.length > 0) {
-                        const bestMatch = suitableVehicles.reduce((best, current) => 
-                          current.difference < best.difference ? current : best
-                        );
-                        recommendedTransportId = bestMatch.id;
-                      }
+                    let recommendedId: string | null = null;
+                    if (passengerCount > 0) {
+                      const suitable = routeTransports.filter(t => t.vehicleType && t.vehicleType.paxCount >= passengerCount).sort((a,b) => a.vehicleType!.paxCount - b.vehicleType!.paxCount);
+                      if (suitable.length > 0) recommendedId = suitable[0].id;
                     }
                     
                     return routeTransports.map((transport) => {
                       if (!transport.vehicleType) return null;
                       const quantity = selectedVehicles.get(transport.id) || 0;
-                      const price = Number(transport.price);
-                      const total = price * quantity;
+                      const total = Number(transport.price) * quantity;
                       const isSelected = quantity > 0;
-                      
-                      // Only recommend the vehicle closest to passenger count
-                      const isRecommended = transport.id === recommendedTransportId;
+                      const isRecommended = transport.id === recommendedId;
                     
                     return (
-                      <TableRow 
-                        key={transport.id}
-                        className={isSelected ? 'bg-red-50' : isRecommended ? 'bg-red-50' : ''}
-                      >
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Truck className={`h-4 w-4 ${isSelected ? 'text-red-600' : 'text-gray-400'}`} />
-                            <span className="font-medium text-gray-900">{transport.vehicleType.vehicleName}</span>
-                            {isRecommended && (
-                              <div className="flex items-center space-x-1 text-red-600" title="Recommended: Matches route and fits passenger count">
-                                <Star className="h-3.5 w-3.5 fill-red-600" />
-                                <span className="text-xs font-medium">Recommended</span>
-                              </div>
-                            )}
+                      <TableRow key={transport.id} className={cn("h-10 transition-colors", isSelected ? 'bg-primary/5' : isRecommended ? 'bg-secondary/5' : '')}>
+                        <TableCell className="px-4 py-0">
+                          <div className="flex items-center gap-2">
+                            <Truck className={cn("h-3.5 w-3.5", isSelected ? "text-primary" : "text-muted-foreground")} />
+                            <span className="text-[10px] font-bold text-primary uppercase">{transport.vehicleType.vehicleName}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Users className="h-4 w-4 text-gray-400" />
-                            <span className="text-gray-700">{transport.vehicleType.paxCount} PAX</span>
+                        <TableCell className="text-center py-0"><span className="text-[9px] font-bold bg-muted px-1.5 py-0.5 rounded uppercase">{transport.vehicleType.paxCount} PAX</span></TableCell>
+                        <TableCell className="py-0"><span className="text-[10px] font-bold text-primary">SAR {Number(transport.price).toLocaleString()}</span></TableCell>
+                        <TableCell className="py-0">
+                          <div className="flex items-center justify-center gap-2 bg-gray-50 p-0.5 rounded-md border border-gray-100 w-fit mx-auto">
+                            <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(transport.id, -1)} disabled={disabled || quantity === 0} className="h-5 w-5 rounded hover:text-destructive"><Minus className="h-2 w-2" /></Button>
+                            <span className="text-[10px] font-bold w-3 text-center">{quantity}</span>
+                            <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(transport.id, 1)} disabled={disabled} className="h-5 w-5 rounded hover:text-emerald-600"><Plus className="h-2 w-2" /></Button>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <span className="font-medium text-gray-900">₹{price.toLocaleString('en-IN')}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleQuantityChange(transport.id, -1)}
-                              disabled={disabled || quantity === 0}
-                              className="h-7 w-7 p-0 border-gray-300 hover:bg-red-50 hover:border-red-300"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className={`text-sm font-medium w-8 text-center ${
-                              isSelected ? 'text-red-600' : 'text-gray-900'
-                            }`}>
-                              {quantity}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleQuantityChange(transport.id, 1)}
-                              disabled={disabled}
-                              className="h-7 w-7 p-0 border-gray-300 hover:bg-red-50 hover:border-red-300"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`font-semibold ${
-                            isSelected ? 'text-red-600' : 'text-gray-900'
-                          }`}>
-                            ₹{total.toLocaleString('en-IN')}
-                          </span>
-                        </TableCell>
+                        <TableCell className="px-4 py-0 text-right"><span className={cn("text-[10px] font-bold", isSelected ? 'text-secondary' : 'text-primary/10')}>SAR {total.toLocaleString()}</span></TableCell>
                       </TableRow>
                     );
                   });
@@ -530,7 +453,7 @@ export const TransportVehicleSelectionStep: React.FC<TransportVehicleSelectionSt
               </Table>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

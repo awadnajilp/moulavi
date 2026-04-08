@@ -344,7 +344,7 @@ export const HotelBookingTable: React.FC<HotelBookingTableProps> = ({
                         variant="outline"
                         size="sm"
                         onClick={() => onRemoveBooking(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-primary hover:text-destructive hover:bg-destructive/5"
                         disabled={disabled}
                       >
                         Remove
@@ -376,7 +376,7 @@ export const HotelBookingTable: React.FC<HotelBookingTableProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                    <span className="text-sm font-bold text-red-600">{index + 1}</span>
+                    <span className="text-sm font-bold text-primary">{index + 1}</span>
                   </div>
                   <h4 className="font-semibold text-gray-900">Hotel Booking #{index + 1}</h4>
                 </div>
@@ -386,7 +386,7 @@ export const HotelBookingTable: React.FC<HotelBookingTableProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => onRemoveBooking(index)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-primary hover:text-destructive hover:bg-destructive/5"
                     disabled={disabled}
                   >
                     Remove

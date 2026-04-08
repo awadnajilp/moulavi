@@ -259,8 +259,8 @@ export default function AddToExistingBookingPage() {
                     onClick={() => fileInputRef.current?.click()}
                     className={`border-2 border-dashed rounded-lg p-6 lg:p-12 text-center cursor-pointer transition-colors ${
                       isDragging
-                        ? 'border-red-500 bg-red-50'
-                        : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-red-50/50'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 bg-gray-50 hover:border-secondary/40 hover:bg-secondary/5'
                     }`}
                   >
                     <input
@@ -272,25 +272,27 @@ export default function AddToExistingBookingPage() {
                     />
                     
                     <div className="flex flex-col items-center justify-center space-y-3 lg:space-y-4">
-                      <UploadCloud className={`w-12 h-12 lg:w-16 lg:h-16 ${isDragging ? 'text-red-500' : 'text-gray-400'}`} />
+                      <UploadCloud className={`w-12 h-12 lg:w-16 lg:h-16 ${isDragging ? 'text-primary' : 'text-gray-400'}`} />
                       <div>
-                        <p className="text-base lg:text-lg font-medium text-gray-700 mb-1">
-                          {isDragging ? 'Drop your ZIP file here' : 'Click to upload or drag and drop'}
+                        <p className="text-base lg:text-lg font-black text-primary mb-1 uppercase tracking-tighter italic">
+                          {isDragging ? 'Release to Initialize' : 'Initialize Asset Upload'}
                         </p>
-                        <p className="text-xs lg:text-sm text-gray-500">
-                          ZIP file containing all PAN cards (MAX. 50MB)
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          Tactical ZIP package required (MAX. 50MB)
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-3 lg:p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <div className="flex items-center space-x-2 lg:space-x-3 min-w-0 flex-1">
-                      <File className="h-6 w-6 lg:h-8 lg:w-8 text-red-600 flex-shrink-0" />
+                  <div className="flex items-center justify-between p-4 lg:p-6 border-2 border-emerald-500/20 bg-emerald-50/30 rounded-2xl shadow-xl shadow-emerald-500/5 animate-in zoom-in-95">
+                    <div className="flex items-center space-x-4 lg:space-x-6 min-w-0 flex-1">
+                      <div className="p-3 bg-white rounded-xl shadow-sm border border-emerald-100">
+                        <File className="h-6 w-6 lg:h-8 lg:w-8 text-emerald-600 flex-shrink-0" />
+                      </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 text-sm lg:text-base truncate">{zipFile.name}</p>
-                        <p className="text-xs lg:text-sm text-gray-500">
-                          {(zipFile.size / (1024 * 1024)).toFixed(2)} MB
+                        <p className="font-black text-primary text-sm lg:text-lg truncate uppercase italic">{zipFile.name}</p>
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">
+                          Payload: {(zipFile.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
@@ -299,21 +301,21 @@ export default function AddToExistingBookingPage() {
                       variant="ghost"
                       size="sm"
                       onClick={handleRemoveFile}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0 ml-2"
+                      className="text-destructive hover:text-white hover:bg-destructive transition-all flex-shrink-0 ml-2 rounded-xl h-10 px-4 font-black uppercase text-[10px] tracking-widest"
                     >
-                      <X className="h-4 w-4" />
+                      Flush
                     </Button>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-8 border-t border-secondary/10">
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+                  className="w-full sm:w-auto h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 transition-all active:scale-[0.97]"
                 >
-                  {loading ? 'Adding Group...' : 'Add Group to Booking'}
+                  {loading ? 'Synchronizing...' : 'Execute Deployment'}
                 </Button>
               </div>
             </form>

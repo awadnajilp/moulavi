@@ -35,12 +35,12 @@ export const HotelCoverageIndicator: React.FC<HotelCoverageIndicatorProps> = ({
           <div
             className={`h-2 rounded-full transition-all duration-300 ${
               daysBeyond > 0
-                ? 'bg-red-500'
+                ? 'bg-primary'
                 : coveragePercentage === 100
                 ? 'bg-green-500'
                 : coveragePercentage >= 80
                 ? 'bg-yellow-500'
-                : 'bg-red-500'
+                : 'bg-primary'
             }`}
             style={{ width: `${Math.min(100, displayPercentage)}%` }}
           />
@@ -48,23 +48,23 @@ export const HotelCoverageIndicator: React.FC<HotelCoverageIndicatorProps> = ({
         <span
           className={`font-medium ${
             daysBeyond > 0
-              ? 'text-red-600'
+              ? 'text-primary'
               : coveragePercentage === 100
               ? 'text-green-600'
               : coveragePercentage >= 80
               ? 'text-yellow-600'
-              : 'text-red-600'
+              : 'text-primary'
           }`}
         >
           {displayDays}/{totalDays} days ({displayPercentage}%)
           {daysBeyond > 0 && (
-            <span className="ml-1 text-red-600">
+            <span className="ml-1 text-primary">
               ({daysBeyond} day{daysBeyond > 1 ? 's' : ''} beyond)
             </span>
           )}
         </span>
         {showDetails && remainingDays > 0 && (
-          <span className="text-red-600 font-medium">
+          <span className="text-primary font-medium">
             ⚠️ {remainingDays} day{remainingDays > 1 ? 's' : ''} uncovered
           </span>
         )}

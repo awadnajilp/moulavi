@@ -88,7 +88,7 @@ export default function ViewUmrahVisaBookingPage() {
       voucher: 'bg-primary/10 text-secondary border-primary/20',
       bill: 'bg-gray-50 text-gray-700 border-gray-200',
       booking_success: 'bg-green-50 text-green-700 border-green-100',
-      cancelled: 'bg-red-50 text-red-700 border-red-100',
+      cancelled: 'bg-destructive/5 text-destructive border-destructive/20',
     };
     return statusColors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -204,7 +204,7 @@ export default function ViewUmrahVisaBookingPage() {
         <div className="p-4 lg:p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 text-red-600 animate-spin mb-4" />
+              <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
               <p className="text-gray-600 font-medium">Loading booking details...</p>
             </div>
           ) : !booking ? (
@@ -215,28 +215,28 @@ export default function ViewUmrahVisaBookingPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Booking Summary Card with Red Accent */}
-              <Card className="border-l-4 border-l-red-600 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                  <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+              {/* Booking Summary Card with Green Accent */}
+              <Card className="border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                  <CardTitle className="text-xl flex items-center gap-2 text-primary">
                     <Building className="h-6 w-6" /> Booking Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-4">
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Group Name</p>
-                      <p className="text-xl font-bold text-red-600">{booking.groupName || 'N/A'}</p>
+                      <p className="text-xl font-bold text-primary">{booking.groupName || 'N/A'}</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Group Number</p>
-                      <p className="text-xl font-bold text-red-600">{booking.groupNumber || '—'}</p>
+                      <p className="text-xl font-bold text-primary">{booking.groupNumber || '—'}</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Passengers</p>
-                      <p className="text-xl font-bold text-red-600">{booking.passengerCount || 0}</p>
+                      <p className="text-xl font-bold text-primary">{booking.passengerCount || 0}</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Status</p>
                       <Badge className={`text-sm font-semibold px-3 py-1 border ${getStatusBadgeColor(booking.status)}`}>
                         {booking.status?.replace(/_/g, ' ').toUpperCase() || 'N/A'}
@@ -244,11 +244,11 @@ export default function ViewUmrahVisaBookingPage() {
                     </div>
                   </div>
                   {booking.status === 'bill' && booking.hasTransportation && (
-                    <div className="mt-4 pt-4 border-t border-red-200">
+                    <div className="mt-4 pt-4 border-t border-primary/20">
                       <Button
                         onClick={downloadVoucherPDF}
                         disabled={downloadingVoucher}
-                        className="bg-red-600 hover:bg-red-700 text-white"
+                        className="bg-primary hover:bg-primary/90 text-white"
                       >
                         {downloadingVoucher ? (
                           <>
@@ -269,33 +269,33 @@ export default function ViewUmrahVisaBookingPage() {
 
               {/* Party Contact Information */}
               <Card className="shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                  <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                  <CardTitle className="text-xl flex items-center gap-2 text-primary">
                     <Mail className="h-6 w-6" /> Party Contact Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-                    <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                    <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                       <div className="flex items-center gap-2 mb-2">
-                        <Mail className="h-4 w-4 text-red-600" />
+                        <Mail className="h-4 w-4 text-primary" />
                         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</p>
                       </div>
                       <p className="text-sm text-gray-900 break-all font-medium">{booking.party?.email || 'N/A'}</p>
                     </div>
                     {booking.party?.contactNumber && (
-                      <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                      <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                         <div className="flex items-center gap-2 mb-2">
-                          <Phone className="h-4 w-4 text-red-600" />
+                          <Phone className="h-4 w-4 text-primary" />
                           <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contact</p>
                         </div>
                         <p className="text-sm text-gray-900 font-medium">{booking.party.contactNumber}</p>
                       </div>
                     )}
                     {booking.party?.whatsappNumber && (
-                      <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                      <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                         <div className="flex items-center gap-2 mb-2">
-                          <MessageCircle className="h-4 w-4 text-red-600" />
+                          <MessageCircle className="h-4 w-4 text-primary" />
                           <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">WhatsApp</p>
                         </div>
                         <p className="text-sm text-gray-900 font-medium">{booking.party.whatsappNumber}</p>
@@ -308,47 +308,47 @@ export default function ViewUmrahVisaBookingPage() {
               {/* Flight Details */}
               {booking.travelDetails && (
                 <Card className="shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                    <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+                  <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                    <CardTitle className="text-xl flex items-center gap-2 text-primary">
                       <Plane className="h-6 w-6" /> Flight Details
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                       {/* Arrival */}
-                      <div className="border-l-4 border-l-red-600 bg-red-50 rounded-r-lg p-6">
+                      <div className="border-l-4 border-l-primary bg-primary/5 rounded-r-lg p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
                             <Plane className="h-5 w-5 text-white rotate-[-45deg]" />
                           </div>
-                          <p className="text-sm font-bold text-red-600 uppercase tracking-wide">Arrival</p>
+                          <p className="text-sm font-bold text-primary uppercase tracking-wide">Arrival</p>
                         </div>
                         {(() => {
                           const arrival = formatDateTime(booking.travelDetails.arrivalDateTime);
                           return (
                             <div className="space-y-3">
                               <div className="flex items-center gap-3">
-                                <Calendar className="h-5 w-5 text-red-600" />
+                                <Calendar className="h-5 w-5 text-primary" />
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
                                   <p className="text-lg font-bold text-gray-900">{arrival.date}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                <Clock className="h-5 w-5 text-red-600" />
+                                <Clock className="h-5 w-5 text-primary" />
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
                                   <p className="text-lg font-bold text-gray-900">{arrival.time}</p>
                                 </div>
                               </div>
-                              <div className="pt-3 border-t border-red-200 space-y-2">
+                              <div className="pt-3 border-t border-primary/20 space-y-2">
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
                                   <p className="text-sm font-semibold text-gray-900">{booking.travelDetails.arrivalAirport?.name || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
-                                  <p className="text-sm font-semibold text-red-600">{booking.travelDetails.arrivalFlightNumber || 'N/A'}</p>
+                                  <p className="text-sm font-semibold text-primary">{booking.travelDetails.arrivalFlightNumber || 'N/A'}</p>
                                 </div>
                               </div>
                             </div>
@@ -357,39 +357,39 @@ export default function ViewUmrahVisaBookingPage() {
                       </div>
 
                       {/* Departure */}
-                      <div className="border-l-4 border-l-orange-500 bg-orange-50 rounded-r-lg p-6">
+                      <div className="border-l-4 border-l-secondary bg-secondary/10 rounded-r-lg p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
                             <Plane className="h-5 w-5 text-white rotate-[45deg]" />
                           </div>
-                          <p className="text-sm font-bold text-orange-600 uppercase tracking-wide">Departure</p>
+                          <p className="text-sm font-bold text-secondary uppercase tracking-wide">Departure</p>
                         </div>
                         {(() => {
                           const departure = formatDateTime(booking.travelDetails.departureDateTime);
                           return (
                             <div className="space-y-3">
                               <div className="flex items-center gap-3">
-                                <Calendar className="h-5 w-5 text-orange-600" />
+                                <Calendar className="h-5 w-5 text-secondary" />
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
                                   <p className="text-lg font-bold text-gray-900">{departure.date}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                <Clock className="h-5 w-5 text-orange-600" />
+                                <Clock className="h-5 w-5 text-secondary" />
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
                                   <p className="text-lg font-bold text-gray-900">{departure.time}</p>
                                 </div>
                               </div>
-                              <div className="pt-3 border-t border-orange-200 space-y-2">
+                              <div className="pt-3 border-t border-secondary/20 space-y-2">
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
                                   <p className="text-sm font-semibold text-gray-900">{booking.travelDetails.departureAirport?.name || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
-                                  <p className="text-sm font-semibold text-orange-600">{booking.travelDetails.departureFlightNumber || 'N/A'}</p>
+                                  <p className="text-sm font-semibold text-secondary">{booking.travelDetails.departureFlightNumber || 'N/A'}</p>
                                 </div>
                               </div>
                             </div>
@@ -403,20 +403,20 @@ export default function ViewUmrahVisaBookingPage() {
 
               {/* Accommodation Section */}
               <Card className="shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                  <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                  <CardTitle className="text-xl flex items-center gap-2 text-primary">
                     <Building className="h-6 w-6" /> Accommodation
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
                   {/* Accommodation Type Badge */}
-                  <div className="flex items-center gap-4 p-4 bg-red-50 rounded-lg border border-red-100">
-                    <div className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center">
+                  <div className="flex items-center gap-4 p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
                       <Building className="h-6 w-6 text-white" />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Accommodation Type</p>
-                      <Badge className="bg-red-600 text-white text-sm font-semibold px-3 py-1">
+                      <Badge className="bg-primary text-white text-sm font-semibold px-3 py-1">
                         {booking.accommodationType?.toUpperCase() || 'N/A'}
                       </Badge>
                     </div>
@@ -449,7 +449,7 @@ export default function ViewUmrahVisaBookingPage() {
                         <div className="min-w-full inline-block align-middle">
                           <div className="overflow-hidden border border-gray-200 rounded-lg">
                             <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-red-600">
+                              <thead className="bg-primary">
                                 <tr>
                                   <th className="py-3 px-3 lg:px-4 text-left text-xs font-bold uppercase tracking-wide text-white">City</th>
                                   <th className="py-3 px-3 lg:px-4 text-left text-xs font-bold uppercase tracking-wide text-white">Hotel Name</th>
@@ -468,12 +468,12 @@ export default function ViewUmrahVisaBookingPage() {
                                     <tr 
                                       key={h.id} 
                                       className={`transition-colors ${
-                                        idx % 2 === 0 ? 'bg-white' : 'bg-red-50'
-                                      } hover:bg-red-100`}
+                                        idx % 2 === 0 ? 'bg-white' : 'bg-primary/5'
+                                      } hover:bg-primary/10`}
                                     >
                                       <td className="py-3 px-3 lg:px-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
-                                          <MapPin className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                                           <span className="text-xs lg:text-sm font-semibold text-gray-900">{cityName}</span>
                                         </div>
                                       </td>
@@ -485,13 +485,13 @@ export default function ViewUmrahVisaBookingPage() {
                                       </td>
                                       <td className="py-3 px-3 lg:px-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
-                                          <Calendar className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                          <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                                           <span className="text-xs lg:text-sm text-gray-700 font-medium">{formatDate(checkIn)}</span>
                                         </div>
                                       </td>
                                       <td className="py-3 px-3 lg:px-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
-                                          <Calendar className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                          <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                                           <span className="text-xs lg:text-sm text-gray-700 font-medium">{formatDate(checkOut)}</span>
                                         </div>
                                       </td>
@@ -511,24 +511,24 @@ export default function ViewUmrahVisaBookingPage() {
                     <>
                       {booking.sponsorIqamaDetails ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
-                          <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Iqama Number</p>
-                            <p className="text-base font-bold text-red-600">{booking.sponsorIqamaDetails.iqamaNumber || 'N/A'}</p>
+                            <p className="text-base font-bold text-primary">{booking.sponsorIqamaDetails.iqamaNumber || 'N/A'}</p>
                           </div>
-                          <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Holder Name</p>
                             <p className="text-base font-bold text-gray-900">{booking.sponsorIqamaDetails.iqamaSponserName || 'N/A'}</p>
                           </div>
-                          <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Date of Birth</p>
                             <p className="text-base font-bold text-gray-900">{formatDate(booking.sponsorIqamaDetails.sponserDob)}</p>
                           </div>
-                          <div className="bg-red-50 rounded-lg p-4 border border-red-100">
+                          <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Mobile Number</p>
                             <p className="text-base font-bold text-gray-900">{booking.sponsorIqamaDetails.sponserMobileNumber || 'N/A'}</p>
                           </div>
                           {booking.sponsorIqamaDetails.sponserNationalShortAddress && (
-                            <div className="sm:col-span-2 bg-red-50 rounded-lg p-4 border border-red-100">
+                            <div className="sm:col-span-2 bg-primary/5 rounded-lg p-4 border border-primary/10">
                               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">National Short Address</p>
                               <p className="text-base font-semibold text-gray-900">{booking.sponsorIqamaDetails.sponserNationalShortAddress}</p>
                             </div>
@@ -552,64 +552,64 @@ export default function ViewUmrahVisaBookingPage() {
                 
                 return (
                   <Card className="shadow-md hover:shadow-lg transition-shadow">
-                    <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                      <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+                    <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                      <CardTitle className="text-xl flex items-center gap-2 text-primary">
                         <Route className="h-6 w-6" /> 
                         Movement Details & Ziyaraths
-                        <Badge className="ml-2 bg-red-600 text-white">{booking.movementDetails.length}</Badge>
+                        <Badge className="ml-2 bg-primary text-white">{booking.movementDetails.length}</Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
                       {/* Regular Movement Details */}
                       {regularMovements.length > 0 && (
                         <div className="mb-8">
-                          <h4 className="text-sm font-bold text-red-600 uppercase tracking-wide mb-4 flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-primary uppercase tracking-wide mb-4 flex items-center gap-2">
                             <Truck className="h-4 w-4" /> Transport Movements ({regularMovements.length})
                           </h4>
                           <div className="space-y-4">
                             {regularMovements.map((movement: any, index: number) => {
                               const travelDateTime = formatDateTime(movement.travelDateTime);
                               return (
-                                <div key={movement.id} className="border-l-4 border-l-red-600 bg-red-50 rounded-r-lg p-5 hover:bg-red-100 transition-all shadow-sm">
+                                <div key={movement.id} className="border-l-4 border-l-primary bg-primary/5 rounded-r-lg p-5 hover:bg-primary/10 transition-all shadow-sm">
                                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                     <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                                      <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shadow-md">
                                         <span className="text-xs font-bold text-white">{movement.routeNumber || `#${index + 1}`}</span>
                                       </div>
                                       <div>
-                                        <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Route {index + 1}</p>
+                                        <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">Route {index + 1}</p>
                                         <p className="text-base font-bold text-gray-900">
                                           {movement.fromCity?.name || 'N/A'} → {movement.toCity?.name || 'N/A'}
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="bg-white rounded-lg p-3 border border-red-200">
+                                    <div className="bg-white rounded-lg p-3 border border-primary/20">
                                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Travel Date & Time</p>
                                       <div className="flex items-center gap-2 mb-1">
-                                        <Calendar className="h-4 w-4 text-red-600" />
+                                        <Calendar className="h-4 w-4 text-primary" />
                                         <span className="text-sm font-semibold text-gray-900">{travelDateTime.date}</span>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-red-600" />
+                                        <Clock className="h-4 w-4 text-primary" />
                                         <span className="text-sm font-semibold text-gray-900">{travelDateTime.time}</span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 pt-4 border-t border-red-200">
-                                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 pt-4 border-t border-primary/20">
+                                    <div className="bg-white rounded-lg p-3 border border-primary/10">
                                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">From</p>
                                       <div className="flex items-center gap-2">
-                                        <MapPin className="h-4 w-4 text-red-600" />
+                                        <MapPin className="h-4 w-4 text-primary" />
                                         <div>
                                           <p className="text-sm font-bold text-gray-900">{movement.fromLocation?.name || 'N/A'}</p>
                                           <p className="text-xs text-gray-600">{movement.fromCity?.name || 'N/A'}</p>
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                                    <div className="bg-white rounded-lg p-3 border border-primary/10">
                                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">To</p>
                                       <div className="flex items-center gap-2">
-                                        <MapPin className="h-4 w-4 text-red-600" />
+                                        <MapPin className="h-4 w-4 text-primary" />
                                         <div>
                                           <p className="text-sm font-bold text-gray-900">{movement.toLocation?.name || 'N/A'}</p>
                                           <p className="text-xs text-gray-600">{movement.toCity?.name || 'N/A'}</p>
@@ -627,42 +627,42 @@ export default function ViewUmrahVisaBookingPage() {
                       {/* Ziyaraths */}
                       {ziyaraths.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-bold text-red-600 uppercase tracking-wide mb-4 flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-primary uppercase tracking-wide mb-4 flex items-center gap-2">
                             <MapPin className="h-4 w-4" /> Ziyaraths ({ziyaraths.length})
                           </h4>
                           <div className="space-y-4">
                             {ziyaraths.map((ziyarath: any, index: number) => {
                               const travelDateTime = formatDateTime(ziyarath.travelDateTime);
                               return (
-                                <div key={ziyarath.id} className="border-l-4 border-l-red-500 bg-gradient-to-r from-red-50 to-purple-50 rounded-r-lg p-5 hover:from-red-100 hover:to-purple-100 transition-all shadow-sm">
+                                <div key={ziyarath.id} className="border-l-4 border-l-secondary bg-gradient-to-r from-primary/5 to-secondary/10 rounded-r-lg p-5 hover:from-primary/10 hover:to-secondary/20 transition-all shadow-sm">
                                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                                     <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-600 to-purple-600 flex items-center justify-center shadow-md">
+                                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-md">
                                         <span className="text-xs font-bold text-white">Z{index + 1}</span>
                                       </div>
                                       <div>
-                                        <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">Ziyarath {index + 1}</p>
+                                        <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">Ziyarath {index + 1}</p>
                                         <p className="text-base font-bold text-gray-900">
                                           {ziyarath.fromCity?.name || 'N/A'} → {ziyarath.toLocation?.name || 'N/A'}
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="bg-white rounded-lg p-3 border border-red-200">
+                                    <div className="bg-white rounded-lg p-3 border border-primary/20">
                                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Date & Time</p>
                                       <div className="flex items-center gap-2 mb-1">
-                                        <Calendar className="h-4 w-4 text-red-600" />
+                                        <Calendar className="h-4 w-4 text-primary" />
                                         <span className="text-sm font-semibold text-gray-900">{travelDateTime.date}</span>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4 text-red-600" />
+                                        <Clock className="h-4 w-4 text-primary" />
                                         <span className="text-sm font-semibold text-gray-900">{travelDateTime.time}</span>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="pt-4 border-t border-red-200 bg-white rounded-lg p-3 border border-red-100">
-                                    <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Ziyarath Location</p>
+                                  <div className="pt-4 border-t border-primary/20 bg-white rounded-lg p-3 border border-primary/10">
+                                    <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Ziyarath Location</p>
                                     <div className="flex items-center gap-2">
-                                      <MapPin className="h-4 w-4 text-red-600" />
+                                      <MapPin className="h-4 w-4 text-primary" />
                                       <div>
                                         <p className="text-sm font-bold text-gray-900">{ziyarath.toLocation?.name || 'N/A'}</p>
                                         <p className="text-xs text-gray-600">{ziyarath.toCity?.name || 'N/A'}</p>
@@ -683,10 +683,10 @@ export default function ViewUmrahVisaBookingPage() {
               {/* Transportation */}
               {Array.isArray(booking.transportBookings) && booking.transportBookings.length > 0 && (
                 <Card className="shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-red-50 to-white border-b border-red-100">
-                    <CardTitle className="text-xl flex items-center gap-2 text-red-600">
+                  <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
+                    <CardTitle className="text-xl flex items-center gap-2 text-primary">
                       <Truck className="h-6 w-6" /> Transportation Vehicles
-                      <Badge className="ml-2 bg-red-600 text-white">{booking.transportBookings.length}</Badge>
+                      <Badge className="ml-2 bg-primary text-white">{booking.transportBookings.length}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-6">
@@ -694,7 +694,7 @@ export default function ViewUmrahVisaBookingPage() {
                       <div className="min-w-full inline-block align-middle">
                         <div className="overflow-hidden border border-gray-200 rounded-lg">
                           <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-red-600">
+                            <thead className="bg-primary">
                               <tr>
                                 <th className="py-3 px-3 lg:px-4 text-left text-xs font-bold uppercase tracking-wide text-white">Route</th>
                                 <th className="py-3 px-3 lg:px-4 text-left text-xs font-bold uppercase tracking-wide text-white">Vehicle Type</th>
@@ -712,12 +712,12 @@ export default function ViewUmrahVisaBookingPage() {
                                   <tr 
                                     key={t.id} 
                                     className={`transition-colors ${
-                                      idx % 2 === 0 ? 'bg-white' : 'bg-red-50'
-                                    } hover:bg-red-100`}
+                                      idx % 2 === 0 ? 'bg-white' : 'bg-primary/5'
+                                    } hover:bg-primary/10`}
                                   >
                                     <td className="py-3 px-3 lg:px-4">
                                       <div className="flex items-center gap-2">
-                                        <Route className="h-4 w-4 text-red-600 flex-shrink-0" />
+                                        <Route className="h-4 w-4 text-primary flex-shrink-0" />
                                         <span className="text-xs lg:text-sm font-semibold text-gray-900">{formatTransportRoute(route)}</span>
                                       </div>
                                     </td>
@@ -735,8 +735,8 @@ export default function ViewUmrahVisaBookingPage() {
                                     </td>
                                     <td className="py-3 px-3 lg:px-4 whitespace-nowrap">
                                       <div className="flex items-center gap-2">
-                                        <DollarSign className="h-4 w-4 text-red-600 flex-shrink-0" />
-                                        <span className="text-xs lg:text-sm font-bold text-red-600">{price ? `₹${price.toLocaleString('en-IN')}` : 'N/A'}</span>
+                                        <DollarSign className="h-4 w-4 text-primary flex-shrink-0" />
+                                        <span className="text-xs lg:text-sm font-bold text-primary">{price ? `₹${price.toLocaleString('en-IN')}` : 'N/A'}</span>
                                       </div>
                                     </td>
                                   </tr>

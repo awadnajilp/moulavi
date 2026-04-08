@@ -345,7 +345,7 @@ export default function PricingMasterPage() {
                           <TableCell>₹{pricing.cost.toLocaleString('en-IN')}</TableCell>
                           <TableCell>₹{pricing.price.toLocaleString('en-IN')}</TableCell>
                           <TableCell>
-                            <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            <span className={profit >= 0 ? 'text-green-600' : 'text-primary'}>
                               ₹{profit.toLocaleString('en-IN')} ({profitMargin}%)
                             </span>
                           </TableCell>
@@ -368,7 +368,7 @@ export default function PricingMasterPage() {
                                 size="sm"
                                 onClick={() => handleDelete(pricing.id)}
                               >
-                                <Trash2 className="h-4 w-4 text-red-600" />
+                                <Trash2 className="h-4 w-4 text-primary" />
                               </Button>
                             </div>
                           </TableCell>

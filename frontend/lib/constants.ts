@@ -7,7 +7,7 @@ export const UMRAH_VISA_STATUS_CONFIG: Record<UmrahVisaStatus, { label: string; 
   voucher: { label: 'Voucher Pending', color: 'bg-orange-50 text-orange-900 border border-orange-200' },
   bill: { label: 'Bill Ready', color: 'bg-indigo-50 text-indigo-900 border border-indigo-200' },
   booking_success: { label: 'Booking Success', color: 'bg-green-50 text-green-900 border border-green-200' },
-  cancelled: { label: 'Cancelled', color: 'bg-red-50 text-red-900 border border-red-200' },
+  cancelled: { label: 'Cancelled', color: 'bg-destructive/5 text-red-900 border border-red-200' },
 };
 
 export const VISA_TYPE_CONFIG: Record<VisaType, { label: string; color: string }> = {

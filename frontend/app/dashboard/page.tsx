@@ -282,7 +282,7 @@ export default function DashboardPage() {
                   <div className="space-y-6">
                      <ComplianceRow label="Compliant" count={12} color="bg-green-500" percentage={75} />
                      <ComplianceRow label="Observation" count={3} color="bg-yellow-500" percentage={18} />
-                     <ComplianceRow label="Non-Compliant" count={1} color="bg-red-500" percentage={7} />
+                     <ComplianceRow label="Non-Compliant" count={1} color="bg-primary" percentage={7} />
                      <div className="pt-4 border-t text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">
                         Based on timely trip info & document updates
                      </div>

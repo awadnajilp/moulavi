@@ -800,7 +800,7 @@ export default function EditUmrahVisaBookingPage() {
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => removeTransportBooking(t.id, idx)}
-                                    className="text-red-600 hover:text-red-700"
+                                    className="text-primary hover:text-destructive"
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
@@ -921,7 +921,7 @@ export default function EditUmrahVisaBookingPage() {
                                         variant="ghost" 
                                         size="sm"
                                         onClick={() => removeHotelBooking(h.id, idx)}
-                                        className="text-red-600 hover:text-red-700"
+                                        className="text-primary hover:text-destructive"
                                       >
                                         <X className="h-4 w-4" />
                                       </Button>
@@ -1029,7 +1029,7 @@ export default function EditUmrahVisaBookingPage() {
                               variant="ghost" 
                               size="sm"
                               onClick={() => removePassenger(idx)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-primary hover:text-destructive"
                             >
                               <X className="h-4 w-4" />
                             </Button>

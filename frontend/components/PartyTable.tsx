@@ -14,7 +14,7 @@ import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 const getComplianceStatus = (partyId: string) => {
   // Deterministic dummy logic for now
   const hash = partyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  if (hash % 10 < 2) return { label: 'Non-Compliant', color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' };
+  if (hash % 10 < 2) return { label: 'Non-Compliant', color: 'bg-primary', text: 'text-destructive', bg: 'bg-destructive/5' };
   if (hash % 10 < 5) return { label: 'Observation', color: 'bg-yellow-500', text: 'text-yellow-700', bg: 'bg-yellow-50' };
   return { label: 'Compliant', color: 'bg-green-500', text: 'text-green-700', bg: 'bg-green-50' };
 };
@@ -341,7 +341,7 @@ export default function PartyTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteParty(party)}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-8 w-8 p-0 text-primary hover:text-destructive hover:bg-destructive/5"
                     title="Delete party"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -421,7 +421,7 @@ export default function PartyTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteParty(party)}
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-8 w-8 p-0 text-primary hover:text-destructive hover:bg-destructive/5"
                     title="Delete party"
                   >
                     <Trash2 className="h-4 w-4" />

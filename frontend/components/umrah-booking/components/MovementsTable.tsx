@@ -67,7 +67,7 @@ export const MovementsTable: React.FC<MovementsTableProps> = ({
     const count = ziyarathCounts[date] || 0;
     console.log(`Date ${date} has count: ${count}, ziyarathCounts:`, ziyarathCounts);
     if (count >= 10) {
-      return '!bg-red-50 !border-red-500 border-2';
+      return '!bg-destructive/5 !border-primary border-2';
     } else if (count >= 5) {
       return '!bg-yellow-50 !border-yellow-500 border-2';
     } else if (count >= 1) {
@@ -273,7 +273,7 @@ export const MovementsTable: React.FC<MovementsTableProps> = ({
                     size="sm"
                     onClick={() => onUpdateMovement(index, 'viabadrOverride', !movement.viabadrOverride)}
                     disabled={disabled}
-                    className={movement.viabadrOverride ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                    className={movement.viabadrOverride ? "bg-primary hover:bg-primary/90 text-white" : ""}
                     title={movement.viabadrOverride ? "Change 'To' city back to Madinah" : "Change 'To' city to Viabadr (only affects 'To' location)"}
                   >
                     ✔ 
@@ -299,7 +299,7 @@ export const MovementsTable: React.FC<MovementsTableProps> = ({
                     size="sm"
                     onClick={() => onRemoveMovement(index)}
                     disabled={disabled}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-primary hover:text-destructive"
                   >
                     <X className="h-4 w-4" />
                   </Button>

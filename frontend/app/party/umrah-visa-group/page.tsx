@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getUser, hasRole, removeUser } from '@/lib/auth';
 import { PartyLayout } from '@/components/layouts/PartyLayout';
-import { ArrowLeft, ChevronRight, ChevronLeft, Plane, Users, Home, User, Truck } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronLeft, Plane, Users, Home, User, Truck, Loader2 } from 'lucide-react';
 
 // Import our new components and hooks
 import { useGroupUmrahBooking } from '@/hooks/useGroupUmrahBooking';
@@ -264,12 +264,12 @@ export default function GroupUmrahVisaPage() {
 
   return (
     <PartyLayout 
-      title="Group Umrah Visa Application" 
-      subtitle="Complete the steps below to apply for your group Umrah visa"
+      title="Group Visa" 
+      subtitle="Complete your group application steps below"
     >
-      <div className="p-4 lg:p-6 pb-24 lg:pb-6">
+      <div className="p-4 lg:p-6 max-w-[1100px] mx-auto pb-24">
         <div className="w-full">
-          {/* Step Progress */}
+          {/* Step Progress - Compact UI */}
           <StepProgress
             currentStep={bookingState.currentStep}
             completedSteps={bookingState.completedSteps}
@@ -278,73 +278,94 @@ export default function GroupUmrahVisaPage() {
           />
 
           {/* Step Content */}
-          <div className="mb-6 lg:mb-8 mt-4 lg:mt-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6 shadow-sm">
-              <div className="flex items-center space-x-3 mb-4 lg:mb-6">
-                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg bg-gradient-to-r from-red-100 to-red-200 flex items-center justify-center flex-shrink-0">
-                  {(() => {
-                    const map:any = { Users, Plane, Home, Truck, User };
-                    const Icon = map[steps[bookingState.currentStep - 1].icon];
-                    return <Icon className="h-4 w-4 lg:h-5 lg:w-5 text-red-600" />;
-                  })()}
+          <div className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <Card className="border shadow-sm overflow-hidden rounded-xl bg-white">
+              <div className="px-6 py-8">
+                <div className="flex items-center gap-4 mb-6 border-b border-secondary/10 pb-6">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+                    {(() => {
+                      const map:any = { Users, Plane, Home, Truck, User };
+                      const Icon = map[steps[bookingState.currentStep - 1].icon];
+                      return <Icon className="h-5 w-5" />;
+                    })()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-bold text-primary uppercase tracking-tight">
+                      Step 0{bookingState.currentStep}: {steps[bookingState.currentStep - 1].title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-medium mt-0.5">{steps[bookingState.currentStep - 1].description}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base lg:text-lg font-semibold text-gray-900">
-                    {steps[bookingState.currentStep - 1].title}
-                  </h3>
-                  <p className="text-xs lg:text-sm text-gray-600">{steps[bookingState.currentStep - 1].description}</p>
+                
+                <div className="min-h-[300px]">
+                  {renderStepContent()}
+                </div>
+
+                {/* Navigation - Attached to bottom of card */}
+                <div className="mt-10 pt-8 border-t border-secondary/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {bookingState.currentStep > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={prevStep}
+                        disabled={isLoading}
+                        className="h-10 px-6 rounded-lg border-secondary/20 text-primary font-bold uppercase tracking-wider hover:bg-secondary transition-all text-xs"
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => router.push('/party/dashboard')}
+                      disabled={isLoading}
+                      className="h-10 px-6 rounded-lg text-muted-foreground font-bold uppercase tracking-wider hover:bg-destructive/5 hover:text-destructive transition-all text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex flex-col items-end mr-2 pr-4 border-r border-white/10">
+                       <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className={cn(
+                              "h-1 rounded-full transition-all duration-500",
+                              i + 1 <= bookingState.currentStep ? "w-4 bg-primary shadow-sm" : "w-1.5 bg-secondary/20"
+                            )} />
+                          ))}
+                       </div>
+                       {bookingState.currentStep < 5 && bookingState.completedSteps.includes(bookingState.currentStep) && hasStepDataChanged(bookingState.currentStep) && (
+                         <span className="text-[7px] font-bold text-orange-400 uppercase tracking-widest mt-0.5 animate-pulse italic">Unsaved Changes</span>
+                       )}
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={isLoading}
+                      className="h-10 px-8 rounded-lg bg-primary text-white font-bold uppercase tracking-wider shadow-md hover:bg-primary/90 transition-all active:scale-[0.97] text-xs"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span>
+                            {bookingState.currentStep < 5 ? 'Next' : 'Submit Application'}
+                          </span>
+                          {bookingState.currentStep < 5 && <ChevronRight className="h-4 w-4 ml-1" />}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {renderStepContent()}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Fixed Navigation Buttons Footer */}
-      <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white border-t border-gray-200 px-3 lg:px-6 py-3 lg:py-4 shadow-lg z-10">
-        <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
-          <div className="flex flex-col sm:flex-row gap-2 sm:space-x-3">
-            {bookingState.currentStep > 1 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={isLoading}
-                className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/party/dashboard')}
-              disabled={isLoading}
-              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </Button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-3">
-            <Button
-              type="button"
-              onClick={nextStep}
-              disabled={isLoading}
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-            >
-              {isLoading ? 'Processing...' : bookingState.currentStep < 5 ? 'Next' : 'Submit Application'}
-              {bookingState.currentStep < 5 && <ChevronRight className="h-4 w-4 ml-2" />}
-            </Button>
-            {/* Show indicator if step has unsaved changes (only for steps 1-4, not step 5) */}
-            {bookingState.currentStep < 5 && bookingState.completedSteps.includes(bookingState.currentStep) && hasStepDataChanged(bookingState.currentStep) && (
-              <div className="flex items-center justify-center text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                <span>•</span>
-                <span className="ml-1">Unsaved changes</span>
-              </div>
-            )}
+            </Card>
           </div>
         </div>
       </div>

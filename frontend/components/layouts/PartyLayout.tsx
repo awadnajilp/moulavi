@@ -245,7 +245,7 @@ export const PartyLayout: React.FC<PartyLayoutProps> = ({
             variant="ghost" 
             size="sm" 
             onClick={handleLogout} 
-            className="w-full justify-start text-gray-600 hover:bg-red-50 hover:text-red-600"
+            className="w-full justify-start text-gray-600 hover:bg-destructive/5 hover:text-primary"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Logout

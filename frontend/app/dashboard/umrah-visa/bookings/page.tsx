@@ -313,7 +313,7 @@ export default function UmrahVisaPage() {
                                   size="sm"
                               variant="outline"
                                   onClick={() => handleDeleteBooking(booking.id, booking.party?.partyName || 'Unknown')}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-primary hover:text-destructive hover:bg-destructive/5"
                             >
                                   <Trash2 className="h-3 w-3" />
                             </Button>

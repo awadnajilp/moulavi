@@ -10,7 +10,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getUser, hasRole } from '@/lib/auth';
 import Sidebar from '@/components/Sidebar';
-import { ChevronRight, ChevronLeft, Menu, User } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Menu, User, Loader2, ArrowLeft, KeyRound, Building2 } from 'lucide-react';
 import { partyAPI } from '@/lib/api';
 
 // Import our new components and hooks
@@ -31,13 +31,18 @@ interface Party {
   email: string;
 }
 
-export default function AdminCreateIndividualUmrahVisaPage() {
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+
+// Main content component that uses searchParams
+function CreateIndividualContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
   const [parties, setParties] = useState<Party[]>([]);
   const [loadingParties, setLoadingParties] = useState(true);
-  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(searchParams.get('partyId') || '');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -45,7 +50,6 @@ export default function AdminCreateIndividualUmrahVisaPage() {
   const {
     bookingState,
     isLoading,
-    partyId,
     updateStep1Data,
     updateStep2Data,
     updateStep3Data,
@@ -60,7 +64,6 @@ export default function AdminCreateIndividualUmrahVisaPage() {
   const {
     masterData,
     loadInitialData,
-    loadTransportOptions,
     loadHotels,
     getHotelsForLocation,
   } = useMasterData();
@@ -80,6 +83,7 @@ export default function AdminCreateIndividualUmrahVisaPage() {
     loadInitialData();
   }, [router, loadInitialData]);
 
+  // Load party data when selectedPartyId changes (including from URL)
   useEffect(() => {
     if (selectedPartyId) {
       loadPartyData(selectedPartyId);
@@ -94,7 +98,6 @@ export default function AdminCreateIndividualUmrahVisaPage() {
       setParties(partiesData);
     } catch (error) {
       console.error('Error loading parties:', error);
-      toast.error('Failed to load parties');
     } finally {
       setLoadingParties(false);
     }
@@ -102,382 +105,172 @@ export default function AdminCreateIndividualUmrahVisaPage() {
 
   const validateCurrentStep = () => {
     switch (bookingState.currentStep) {
-      case 1:
-        return validateStep1(bookingState.step1Data);
-      case 2:
-        return validateStep2(bookingState.step2Data, masterData.airports, bookingState.step1Data, masterData.umrahVisaMaster);
-      case 3:
-        return validateStep3(bookingState.step3Data, bookingState.step2Data.arrivalDate, bookingState.step2Data.departureDate, bookingState.step2Data);
-      case 4:
-        return validateStep4(bookingState.step4Data, bookingState.step2Data.arrivalDate, bookingState.step2Data.departureDate);
-      case 5:
-        return validateStep5Movements(bookingState.step5Data, bookingState.step1Data, bookingState.step2Data, bookingState.step3Data, bookingState.step4Data, masterData.locationMasters);
-      case 6:
-        return validateStep6(bookingState.step6Data || { panCardZipFile: null }, bookingState.step1Data, bookingState.step3Data, false);
-      default:
-        return null;
+      case 1: return validateStep1(bookingState.step1Data);
+      case 2: return validateStep2(bookingState.step2Data, masterData.airports, bookingState.step1Data, masterData.umrahVisaMaster);
+      case 3: return validateStep3(bookingState.step3Data, bookingState.step2Data.arrivalDate, bookingState.step2Data.departureDate, bookingState.step2Data);
+      case 4: return validateStep4(bookingState.step4Data, bookingState.step2Data.arrivalDate, bookingState.step2Data.departureDate);
+      case 5: return validateStep5Movements(bookingState.step5Data, bookingState.step1Data, bookingState.step2Data, bookingState.step3Data, bookingState.step4Data, masterData.locationMasters);
+      case 6: return validateStep6(bookingState.step6Data || { panCardZipFile: null }, bookingState.step1Data, bookingState.step3Data, false);
+      default: return null;
     }
   };
 
-  // Helper: Check if arrival airport is Jeddah or Madinah
   const isJeddahOrMadinahAirport = (): boolean => {
-    if (!bookingState.step2Data.arrivalAirportId || !masterData.locationMasters) {
-      return false;
-    }
-    const arrivalAirport = masterData.locationMasters.find(
-      (lm) => lm.id === bookingState.step2Data.arrivalAirportId && lm.locationType === 'AIRPORT'
-    );
+    if (!bookingState.step2Data.arrivalAirportId || !masterData.locationMasters) return false;
+    const arrivalAirport = masterData.locationMasters.find(lm => lm.id === bookingState.step2Data.arrivalAirportId && lm.locationType === 'AIRPORT');
     if (!arrivalAirport) return false;
-    
-    const cityName = arrivalAirport.cityMaster?.name || arrivalAirport.city || '';
-    const normalizedCity = cityName.toLowerCase().trim();
-    return normalizedCity === 'jeddah' || normalizedCity === 'madinah' || normalizedCity === 'madina' || normalizedCity === 'medina';
+    const cityName = (arrivalAirport.cityMaster?.name || arrivalAirport.city || '').toLowerCase().trim();
+    return ['jeddah', 'madinah', 'madina', 'medina'].includes(cityName);
   };
 
   const nextStep = async () => {
-    if (!selectedPartyId) {
-      toast.error('Please select a party first');
-      return;
-    }
-
+    if (!selectedPartyId) { toast.error('Please select a party first'); return; }
     const validationError = validateCurrentStep();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
+    if (validationError) { toast.error(validationError); return; }
     const success = await submitStep(bookingState.currentStep);
-    
-    // Special handling for step 3: Skip steps 4 and 5 if arrival airport is not Jeddah/Madinah
-    if (success && bookingState.currentStep === 3 && !isJeddahOrMadinahAirport()) {
-      // Skip steps 4 and 5, go directly to step 6
-      setCurrentStep(6);
-      return;
-    }
-    
-    if (success && bookingState.currentStep === 6) {
-      router.push('/dashboard/umrah-visa/bookings');
-    }
+    if (success && bookingState.currentStep === 3 && !isJeddahOrMadinahAirport()) { setCurrentStep(6); return; }
+    if (success && bookingState.currentStep === 6) router.push('/dashboard/umrah-visa/bookings');
   };
 
   const prevStep = () => {
-    // Special handling for step 6:
-    // - If arrival airport is not Jeddah/Madinah, go to step 3
-    // - If no transport is selected, go to step 3 (not step 5)
-    if (bookingState.currentStep === 6) {
-      if (!isJeddahOrMadinahAirport()) {
-        setCurrentStep(3);
-        return;
-      }
-      // Check if transport is selected
-      const hasTransport = bookingState.step4Data.selectedTransport || 
-                           (bookingState.step4Data.selectedTransports && bookingState.step4Data.selectedTransports.length > 0);
-      if (!hasTransport) {
-        setCurrentStep(3);
-        return;
-      }
-    }
+    if (bookingState.currentStep === 6 && !isJeddahOrMadinahAirport()) { setCurrentStep(3); return; }
     setCurrentStep(Math.max(bookingState.currentStep - 1, 1));
   };
 
   const goToStep = (stepId: number) => {
-    // Prevent going to steps 4 or 5 if arrival airport is not Jeddah/Madinah
-    if ((stepId === 4 || stepId === 5) && !isJeddahOrMadinahAirport()) {
-      // If trying to go to step 4 or 5 but airport is not Jeddah/Madinah, go to step 6 instead
-      setCurrentStep(6);
-      return;
-    }
-    if (stepId <= bookingState.currentStep || bookingState.completedSteps.includes(stepId)) {
-      setCurrentStep(stepId);
-    }
+    if ((stepId === 4 || stepId === 5) && !isJeddahOrMadinahAirport()) { setCurrentStep(6); return; }
+    if (stepId <= bookingState.currentStep || bookingState.completedSteps.includes(stepId)) setCurrentStep(stepId);
   };
 
-  const renderStepContent = () => {
-    switch (bookingState.currentStep) {
-      case 1:
-        return (
-          <BookingModeStep
-            data={bookingState.step1Data}
-            onChange={updateStep1Data}
-            disabled={isLoading}
-          />
-        );
-
-      case 2:
-        return (
-          <TravelDetailsStep
-            data={bookingState.step2Data}
-            onChange={updateStep2Data}
-            airports={masterData.airports}
-            disabled={isLoading}
-          />
-        );
-
-      case 3:
-        return (
-          <AccommodationStep
-            data={bookingState.step3Data}
-            onChange={updateStep3Data}
-            locations={masterData.locations}
-            hotels={masterData.hotels}
-            arrivalDate={bookingState.step2Data.arrivalDate}
-            departureDate={bookingState.step2Data.departureDate}
-            onLoadHotels={loadHotels}
-            getHotelsForLocation={getHotelsForLocation}
-            passengerCount={bookingState.step2Data.passengerCount}
-            disabled={isLoading}
-          />
-        );
-
-      case 4:
-        return (
-          <TransportVehicleSelectionStep
-            data={bookingState.step4Data}
-            step1Data={bookingState.step1Data}
-            step2Data={bookingState.step2Data}
-            step3Data={bookingState.step3Data}
-            locationMasters={masterData.locationMasters}
-            onChange={(data) => {
-              updateStep4Data(data);
-              // Clear movements if transport is removed
-              const hasTransport = data.selectedTransport || 
-                                   (data.selectedTransports && data.selectedTransports.length > 0);
-              if (!hasTransport) {
-                updateStep5Data({ movements: [] });
-              }
-            }}
-            disabled={isLoading}
-          />
-        );
-
-      case 5:
-        return (
-          <MovementDetailsStep
-            data={bookingState.step5Data}
-            step1Data={bookingState.step1Data}
-            step2Data={bookingState.step2Data}
-            step3Data={bookingState.step3Data}
-            step4Data={bookingState.step4Data}
-            locationMasters={masterData.locationMasters}
-            arrivalAirportId={bookingState.step2Data.arrivalAirportId}
-            departureAirportId={bookingState.step2Data.departureAirportId}
-            arrivalDate={bookingState.step2Data.arrivalDate}
-            departureDate={bookingState.step2Data.departureDate}
-            arrivalTime={bookingState.step2Data.arrivalTime}
-            departureTime={bookingState.step2Data.departureTime}
-            onChange={updateStep5Data}
-            disabled={isLoading}
-          />
-        );
-
-      case 6:
-        return (
-          <DocumentsStep
-            data={bookingState.step6Data || { panCardZipFile: null }}
-            step1Data={bookingState.step1Data}
-            step3Data={bookingState.step3Data}
-            onChange={updateStep6Data}
-            disabled={isLoading}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  if (!isClient) {
-    return <LoadingSpinner />;
-  }
-
-  if (!user) {
-    return null;
-  }
+  if (!isClient) return <LoadingSpinner />;
+  if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
+    <div className="flex h-screen bg-background">
+      <div className="hidden lg:block"><Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} /></div>
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}><SheetContent side="left" className="p-0 w-64"><Sidebar /></SheetContent></Sheet>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Header Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Create Individual Umrah Visa</h1>
-                <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
-                  Complete the steps below to create an Umrah visa booking on behalf of a party
-                </p>
-              </div>
+      <div className="flex-1 overflow-auto flex flex-col">
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b px-4 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(true)}><Menu className="h-5 w-5" /></Button>
+            <div>
+              <h1 className="text-lg font-bold text-primary uppercase tracking-tight leading-none">Create Individual Visa</h1>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-1">Admin Management Portal</p>
             </div>
           </div>
-        </div>
+          {selectedPartyId && (
+            <div className="flex items-center gap-3 px-4 py-1.5 rounded-xl bg-primary/5 border border-secondary/20 shadow-sm">
+               <User className="h-3.5 w-3.5 text-secondary" />
+               <span className="text-[10px] font-bold text-primary uppercase">{parties.find(p => p.id === selectedPartyId)?.partyName || 'Syncing...'}</span>
+            </div>
+          )}
+        </header>
 
-        {/* Content */}
-        <div className="p-4 lg:p-8 pb-24 lg:pb-6">
+        <div className="p-4 lg:p-6 max-w-[1100px] mx-auto w-full flex-1 pb-24">
           {!selectedPartyId ? (
-            /* Party Selection Screen - Show first */
-            <div className="max-w-2xl mx-auto mt-12">
-              <Card className="shadow-lg">
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                    <User className="h-8 w-8 text-white" />
-                  </div>
-                  <CardTitle className="text-2xl">Select Party</CardTitle>
-                  <CardDescription className="text-base mt-2">
-                    Choose the party for which you are creating this Umrah visa booking
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <div className="max-w-xl mx-auto mt-8">
+              <Card className="border-0 shadow-2xl shadow-primary/5 rounded-[2rem] overflow-hidden">
+                <div className="bg-primary p-8 text-center">
+                  <div className="mx-auto mb-4 h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center text-secondary border border-white/5"><User className="h-6 w-6" /></div>
+                  <CardTitle className="text-xl font-bold text-white uppercase tracking-tight">Select Party</CardTitle>
+                </div>
+                <CardContent className="p-8 space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="partyId" className="text-base">Party *</Label>
-                    {loadingParties ? (
-                      <div className="text-sm text-gray-500 py-4 text-center">Loading parties...</div>
-                    ) : (
-                      <Select
-                        value={selectedPartyId}
-                        onValueChange={(value) => {
-                          setSelectedPartyId(value);
-                          // Reset booking state when party changes
-                          setCurrentStep(1);
-                        }}
-                        required
-                      >
-                        <SelectTrigger className="h-12 text-base">
-                          <SelectValue placeholder="Select a party" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {parties.map((party) => (
-                            <SelectItem key={party.id} value={party.id}>
-                              {party.partyName} ({party.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    <Label className="text-[10px] font-bold text-primary/60 uppercase ml-1">Choose Partner Agency</Label>
+                    <Select value={selectedPartyId} onValueChange={(v) => { setSelectedPartyId(v); setCurrentStep(1); }}>
+                      <SelectTrigger className="h-12 rounded-xl border-gray-100 font-bold"><SelectValue placeholder="Select a party" /></SelectTrigger>
+                      <SelectContent className="rounded-xl border-0 shadow-2xl p-1">{parties.map((p) => (<SelectItem key={p.id} value={p.id} className="text-xs font-bold p-3">{p.partyName}</SelectItem>))}</SelectContent>
+                    </Select>
                   </div>
-                  {selectedPartyId && (
-                    <div className="pt-4 flex justify-end">
-                      <Button
-                        onClick={() => {
-                          if (selectedPartyId) {
-                            loadPartyData(selectedPartyId);
-                          }
-                        }}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                      >
-                        Continue to Booking
-                        <ChevronRight className="h-4 w-4 ml-2" />
-                      </Button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
           ) : (
-            /* Booking Flow - Show after party selection */
-            <>
-              <div className="w-full">
-                {/* Step Progress */}
-                <StepProgress
-                  currentStep={bookingState.currentStep}
-                  completedSteps={bookingState.completedSteps}
-                  onStepClick={goToStep}
-                  steps={[...INDIVIDUAL_STEPS]}
-                />
+            <div className="space-y-6">
+              <StepProgress currentStep={bookingState.currentStep} completedSteps={bookingState.completedSteps} onStepClick={goToStep} steps={[...INDIVIDUAL_STEPS]} />
+              <Card className="border shadow-sm rounded-xl bg-white overflow-hidden">
+                <div className="px-6 py-6 border-b border-secondary/10 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary font-bold text-xs">0{bookingState.currentStep}</div>
+                  <h3 className="text-sm font-bold text-primary uppercase tracking-wider">{INDIVIDUAL_STEPS[bookingState.currentStep - 1].title}</h3>
+                </div>
+                <div className="p-6">
+                  {(() => {
+                    switch (bookingState.currentStep) {
+                      case 1: return <BookingModeStep data={bookingState.step1Data} onChange={updateStep1Data} disabled={isLoading} />;
+                      case 2: return <TravelDetailsStep data={bookingState.step2Data} onChange={updateStep2Data} airports={masterData.airports} disabled={isLoading} />;
+                      case 3: return <AccommodationStep data={bookingState.step3Data} onChange={updateStep3Data} locations={masterData.locations} hotels={masterData.hotels} arrivalDate={bookingState.step2Data.arrivalDate} departureDate={bookingState.step2Data.departureDate} onLoadHotels={loadHotels} getHotelsForLocation={getHotelsForLocation} passengerCount={bookingState.step2Data.passengerCount} disabled={isLoading} />;
+                      case 4: return <TransportVehicleSelectionStep data={bookingState.step4Data} step1Data={bookingState.step1Data} step2Data={bookingState.step2Data} step3Data={bookingState.step3Data} locationMasters={masterData.locationMasters} onChange={(d) => { updateStep4Data(d); if (!(d.selectedTransport || (d.selectedTransports && d.selectedTransports.length > 0))) updateStep5Data({ movements: [] }); }} disabled={isLoading} />;
+                      case 5: return <MovementDetailsStep data={bookingState.step5Data} step1Data={bookingState.step1Data} step2Data={bookingState.step2Data} step3Data={bookingState.step3Data} step4Data={bookingState.step4Data} locationMasters={masterData.locationMasters} arrivalAirportId={bookingState.step2Data.arrivalAirportId} departureAirportId={bookingState.step2Data.departureAirportId} arrivalDate={bookingState.step2Data.arrivalDate} departureDate={bookingState.step2Data.departureDate} arrivalTime={bookingState.step2Data.arrivalTime} departureTime={bookingState.step2Data.departureTime} onChange={updateStep5Data} disabled={isLoading} />;
+                      case 6: return <DocumentsStep data={bookingState.step6Data || { panCardZipFile: null }} step1Data={bookingState.step1Data} step3Data={bookingState.step3Data} onChange={updateStep6Data} disabled={isLoading} />;
+                      default: return null;
+                    }
+                  })()}
 
-                {/* Step Content */}
-                <div className="mb-6 lg:mb-8 mt-4 lg:mt-6">
-                  <div className="bg-white border border-gray-200 rounded-lg p-4 lg:p-6 shadow-sm">
-                    <div className="flex items-center space-x-3 mb-4 lg:mb-6">
-                      <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg bg-gradient-to-r from-indigo-100 to-indigo-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-indigo-600 font-semibold text-sm lg:text-base">{bookingState.currentStep}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base lg:text-lg font-semibold text-gray-900">
-                          Step {bookingState.currentStep}
-                        </h3>
-                        <p className="text-xs lg:text-sm text-gray-600">
-                          {bookingState.currentStep === 1 && 'Choose your booking type'}
-                          {bookingState.currentStep === 2 && 'Enter travel details and flight information'}
-                          {bookingState.currentStep === 3 && 'Select accommodation type and details'}
-                          {bookingState.currentStep === 4 && 'Select transport vehicle (optional)'}
-                          {bookingState.currentStep === 5 && 'Review and edit movement details'}
-                          {bookingState.currentStep === 6 && 'Upload required documents'}
-                        </p>
-                      </div>
+                  {/* Navigation - Attached to bottom of card */}
+                  <div className="mt-10 pt-8 border-t border-secondary/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {bookingState.currentStep > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={prevStep}
+                          disabled={isLoading}
+                          className="h-10 px-6 rounded-lg border-secondary/20 text-primary font-bold uppercase tracking-wider hover:bg-secondary transition-all text-xs"
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          Previous
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => router.push('/dashboard/umrah-visa/bookings')}
+                        disabled={isLoading}
+                        className="h-10 px-6 rounded-lg text-muted-foreground font-bold uppercase tracking-wider hover:bg-destructive/5 hover:text-destructive transition-all text-xs"
+                      >
+                        Cancel
+                      </Button>
                     </div>
-                    {renderStepContent()}
+
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        onClick={nextStep}
+                        disabled={isLoading || !selectedPartyId}
+                        className="h-10 px-8 rounded-lg bg-primary text-white font-bold uppercase tracking-wider shadow-md hover:bg-primary/90 transition-all active:scale-[0.97] text-xs"
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Processing...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span>
+                              {bookingState.currentStep < 6 ? 'Next Step' : 'Submit Application'}
+                            </span>
+                            {bookingState.currentStep < 6 && <ChevronRight className="h-4 w-4 ml-1" />}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
+              </Card>
+            </div>
           )}
         </div>
-
-        {/* Fixed Navigation Buttons Footer */}
-        {selectedPartyId && (
-          <div className="fixed bottom-0 left-0 lg:left-64 right-0 bg-white border-t border-gray-200 px-3 lg:px-6 py-3 lg:py-4 shadow-lg z-10">
-            <div className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
-              <div className="flex flex-col sm:flex-row gap-2 sm:space-x-3">
-                {bookingState.currentStep > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    Previous
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push('/dashboard/umrah-visa/bookings')}
-                  disabled={isLoading}
-                  className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </Button>
-              </div>
-
-              <div className="flex space-x-3">
-                <Button
-                  type="button"
-                  onClick={nextStep}
-                  disabled={isLoading || !selectedPartyId}
-                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {isLoading ? 'Processing...' : bookingState.currentStep < 6 ? 'Next' : 'Submit Application'}
-                  {bookingState.currentStep < 6 && <ChevronRight className="h-4 w-4 ml-2" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
+  );
+}
+
+export default function AdminCreateIndividualUmrahVisaPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner message="Protocol Initialization..." />}>
+      <CreateIndividualContent />
+    </Suspense>
   );
 }
 

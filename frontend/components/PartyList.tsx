@@ -1,20 +1,22 @@
-'use client';
-
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { partyAPI } from '@/lib/api';
-import { Search, Mail, Phone, MapPin, Activity } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, Activity, UserPlus, Users, Edit3, ShieldCheck, Globe, ChevronRight } from 'lucide-react';
 import { Party, PaginationInfo } from '@/types';
+import { cn } from '@/lib/utils';
 
 const getComplianceStatus = (partyId: string) => {
   const hash = partyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  if (hash % 10 < 2) return { label: 'Non-Compliant', color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50' };
-  if (hash % 10 < 5) return { label: 'Observation', color: 'bg-yellow-500', text: 'text-yellow-700', bg: 'bg-yellow-50' };
-  return { label: 'Compliant', color: 'bg-green-500', text: 'text-green-700', bg: 'bg-green-50' };
+  if (hash % 10 < 2) return { label: 'Audit Required', color: 'bg-orange-500', text: 'text-orange-700', bg: 'bg-orange-50' };
+  if (hash % 10 < 5) return { label: 'Standard', color: 'bg-secondary', text: 'text-secondary', bg: 'bg-secondary/10' };
+  return { label: 'Elite Partner', color: 'bg-primary', text: 'text-primary', bg: 'bg-primary/10' };
 };
 
 export default function PartyList() {
+  const router = useRouter();
   const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -36,7 +38,6 @@ export default function PartyList() {
       setParties(response.data.parties);
       setPagination(response.data.pagination);
     } catch (error) {
-      // Error handling is done by the API interceptor
       setParties([]);
       setPagination(null);
     } finally {
@@ -46,123 +47,190 @@ export default function PartyList() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setPage(1); // Reset to first page on search
+    setPage(1);
+  };
+
+  const handleAction = (partyId: string, action: 'individual' | 'group' | 'edit') => {
+    // In a real app, you'd probably store the selected party in a context or pass via query param
+    switch(action) {
+      case 'individual':
+        router.push(`/dashboard/umrah-visa/create-individual?partyId=${partyId}`);
+        break;
+      case 'group':
+        router.push(`/dashboard/umrah-visa/create-group?partyId=${partyId}`);
+        break;
+      case 'edit':
+        router.push(`/dashboard/umrah-visa/bookings?partyId=${partyId}`);
+        break;
+    }
   };
 
   if (loading && parties.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Loading parties...</p>
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Activity className="h-10 w-10 text-primary/20 animate-pulse" />
+        <p className="text-xs font-black text-primary/40 uppercase tracking-[0.3em]">Scanning Portfolios...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+    <div className="space-y-8">
+      {/* Tactical Search */}
+      <div className="relative max-w-2xl">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/30 h-5 w-5" />
         <Input
-          placeholder="Search by name or email..."
+          placeholder="SEARCH PARTNER AGENCIES OR IDENTIFIERS..."
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-10"
+          className="h-14 pl-12 rounded-2xl border-secondary/20 bg-white font-black text-primary placeholder:text-primary/20 focus:ring-secondary/20 uppercase tracking-widest text-[11px]"
         />
       </div>
 
-      {/* Party List */}
+      {/* Partner List Architecture */}
       {parties.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No parties found</p>
+        <div className="text-center py-20 bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-secondary/10">
+          <Globe className="h-16 w-16 text-primary/10 mx-auto mb-6" />
+          <p className="text-sm font-black text-primary/40 uppercase tracking-widest italic">No matching portfolios detected</p>
         </div>
       ) : (
-        <>
-          <div className="space-y-3">
-            {parties.map((party) => {
-              const compliance = getComplianceStatus(party.id);
-              return (
-                <div
-                  key={party.id}
-                  className="border rounded-lg p-3 lg:p-4 hover:shadow-md transition-shadow bg-white"
-                >
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-base lg:text-lg truncate">{party.partyName}</h3>
-                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full ${compliance.bg} ${compliance.text} text-[10px] font-bold border border-current`}>
-                           <div className={`h-1 w-1 rounded-full ${compliance.color}`}></div>
+        <div className="grid grid-cols-1 gap-6">
+          {parties.map((party) => {
+            const compliance = getComplianceStatus(party.id);
+            return (
+              <Card
+                key={party.id}
+                className="group border-0 shadow-xl shadow-primary/5 bg-white rounded-[2.5rem] overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
+              >
+                <CardContent className="p-0">
+                  <div className="flex flex-col lg:flex-row">
+                    {/* Identity Core */}
+                    <div className="lg:w-[35%] p-8 lg:p-10 bg-primary/5 border-r border-secondary/10">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="h-16 w-16 rounded-[1.5rem] bg-primary flex items-center justify-center text-white shadow-2xl shadow-primary/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                          <span className="text-2xl font-black italic">{party.partyName[0].toUpperCase()}</span>
+                        </div>
+                        <div className={cn(
+                          "px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-sm",
+                          compliance.bg, compliance.text, "border-current/20"
+                        )}>
+                           <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", compliance.color)} />
                            {compliance.label}
                         </div>
                       </div>
-                      <div className="space-y-1 text-xs lg:text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <Mail className="h-3 w-3 mr-2 flex-shrink-0" />
-                          <span className="truncate">{party.email}</span>
+                      
+                      <h3 className="text-2xl font-black text-primary tracking-tighter uppercase italic mb-4">{party.partyName}</h3>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors">
+                          <Mail className="h-4 w-4 text-secondary" />
+                          <span className="text-[11px] font-bold tracking-tight truncate uppercase">{party.email}</span>
                         </div>
-                        {party.contactNumber && (
-                          <div className="flex items-center">
-                            <Phone className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <span>{party.contactNumber}</span>
-                          </div>
-                        )}
-                        {party.address && (
-                          <div className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <span className="line-clamp-2">{party.address}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-3 text-muted-foreground group-hover:text-primary transition-colors">
+                          <Phone className="h-4 w-4 text-secondary" />
+                          <span className="text-[11px] font-bold tracking-widest uppercase">{party.contactNumber || 'NO CHANNEL'}</span>
+                        </div>
+                        <div className="flex items-start gap-3 text-muted-foreground group-hover:text-primary transition-colors">
+                          <MapPin className="h-4 w-4 text-secondary mt-0.5 shrink-0" />
+                          <span className="text-[10px] font-bold uppercase leading-relaxed tracking-wide line-clamp-2">{party.address || 'UNDEFINED LOCATION'}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex sm:flex-col gap-2 sm:text-right">
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        party.customerType === 'b2b' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {party.customerType.toUpperCase()}
-                      </span>
-                      <div className="flex items-center sm:justify-end gap-2">
-                        <div className="text-xs text-gray-500">
-                          {party.accountCurrency?.currencyCode || 'N/A'}
-                        </div>
-                        {party.loginRequired && (
-                          <div className="text-xs text-indigo-600">
-                            ✓ Login
-                          </div>
-                        )}
+
+                    {/* Operational Commands */}
+                    <div className="flex-1 p-8 lg:p-10 flex flex-col justify-center bg-white">
+                      <div className="flex items-center gap-4 mb-8">
+                         <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.4em]">Tactical Actions</span>
+                         <div className="h-px flex-1 bg-secondary/10" />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Button
+                          onClick={() => handleAction(party.id, 'individual')}
+                          className="h-20 rounded-[1.5rem] bg-white border border-secondary/20 text-primary hover:bg-secondary hover:text-primary hover:border-secondary transition-all duration-500 shadow-xl shadow-primary/5 flex flex-col items-center justify-center gap-1 group/btn overflow-hidden relative"
+                        >
+                          <UserPlus className="h-5 w-5 mb-1 relative z-10" />
+                          <span className="text-[10px] font-black uppercase tracking-widest relative z-10">New Individual</span>
+                          <div className="absolute inset-0 bg-secondary translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                        </Button>
+
+                        <Button
+                          onClick={() => handleAction(party.id, 'group')}
+                          className="h-20 rounded-[1.5rem] bg-white border border-secondary/20 text-primary hover:bg-secondary hover:text-primary hover:border-secondary transition-all duration-500 shadow-xl shadow-primary/5 flex flex-col items-center justify-center gap-1 group/btn overflow-hidden relative"
+                        >
+                          <Users className="h-5 w-5 mb-1 relative z-10" />
+                          <span className="text-[10px] font-black uppercase tracking-widest relative z-10">New Group</span>
+                          <div className="absolute inset-0 bg-secondary translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                        </Button>
+
+                        <Button
+                          onClick={() => handleAction(party.id, 'edit')}
+                          className="h-20 rounded-[1.5rem] bg-primary text-white hover:bg-primary/90 transition-all duration-500 shadow-2xl shadow-primary/20 flex flex-col items-center justify-center gap-1 group/btn overflow-hidden relative"
+                        >
+                          <Edit3 className="h-5 w-5 mb-1 relative z-10 text-secondary" />
+                          <span className="text-[10px] font-black uppercase tracking-widest relative z-10">Manage Bookings</span>
+                          <div className="absolute inset-0 bg-white/5 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
+                        </Button>
+                      </div>
+
+                      <div className="mt-8 flex items-center justify-between px-2">
+                         <div className="flex items-center gap-6">
+                            <div className="flex flex-col">
+                               <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Type</span>
+                               <span className="text-[10px] font-black text-primary uppercase italic tracking-tighter">{party.customerType}</span>
+                            </div>
+                            <div className="w-px h-6 bg-secondary/20" />
+                            <div className="flex flex-col">
+                               <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Currency</span>
+                               <span className="text-[10px] font-black text-primary uppercase italic tracking-tighter">{party.accountCurrency?.currencyCode || 'SAR'}</span>
+                            </div>
+                         </div>
+                         {party.loginRequired && (
+                           <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-100 shadow-sm">
+                              <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest italic">Auth Secure</span>
+                           </div>
+                         )}
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-gray-600">
-                Page {pagination.page} of {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </>
+      {/* Command Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-6 pt-10 border-t border-secondary/10">
+          <Button
+            variant="ghost"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="h-12 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/5 text-primary/40 disabled:opacity-20"
+          >
+            Regress
+          </Button>
+          <div className="flex items-center gap-3">
+             <span className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center text-xs font-black shadow-lg shadow-primary/20">
+                {pagination.page}
+             </span>
+             <span className="text-[10px] font-black text-primary/20 uppercase tracking-[0.2em]">of</span>
+             <span className="h-10 w-10 rounded-xl bg-white border border-secondary/20 text-primary flex items-center justify-center text-xs font-black shadow-sm">
+                {pagination.totalPages}
+             </span>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+            disabled={page === pagination.totalPages}
+            className="h-12 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/5 text-primary disabled:opacity-20 transition-all group"
+          >
+            Advance
+            <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
       )}
     </div>
   );

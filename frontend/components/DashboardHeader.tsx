@@ -91,7 +91,7 @@ export default function DashboardHeader({
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="text-gray-600 hover:text-red-600"
+                className="text-gray-600 hover:text-primary"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:ml-2">Logout</span>

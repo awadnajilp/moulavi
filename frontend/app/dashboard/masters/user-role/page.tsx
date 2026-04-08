@@ -390,7 +390,7 @@ export default function UserRoleMasterPage() {
                       <button
                         type="button"
                         onClick={() => removePermission(permission)}
-                        className="ml-1 text-red-500 hover:text-red-700"
+                        className="ml-1 text-primary hover:text-destructive"
                       >
                         ×
                       </button>
@@ -473,7 +473,7 @@ export default function UserRoleMasterPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(userRole.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-primary hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

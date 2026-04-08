@@ -129,7 +129,7 @@ export const PassengerCard: React.FC<PassengerCardProps> = ({
     <Card className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h5 className="font-medium">
-          Passenger {index + 1} {passenger.isLeadPassenger && <span className="text-red-600">(Lead Passenger)</span>}
+          Passenger {index + 1} {passenger.isLeadPassenger && <span className="text-primary">(Lead Passenger)</span>}
         </h5>
         <div className="flex items-center space-x-2">
           {index === 0 && (

@@ -187,7 +187,7 @@ export default function CreatePartyDialog({
         if (errorCount > 0) {
           toast.error('Please fix the form errors before submitting');
           // Scroll to first error field
-          const firstErrorField = document.querySelector('.border-red-500');
+          const firstErrorField = document.querySelector('.border-primary');
           if (firstErrorField) {
             firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
@@ -305,10 +305,10 @@ export default function CreatePartyDialog({
               value={formData.party_name}
               onChange={(e) => handleInputChange('party_name', e.target.value)}
               placeholder="Enter party name"
-              className={errors.party_name ? 'border-red-500' : ''}
+              className={errors.party_name ? 'border-primary' : ''}
             />
             {errors.party_name && (
-              <p className="text-sm text-red-500">{errors.party_name}</p>
+              <p className="text-sm text-primary">{errors.party_name}</p>
             )}
           </div>
 
@@ -321,10 +321,10 @@ export default function CreatePartyDialog({
               onChange={(e) => handleInputChange('party_code', e.target.value.toUpperCase())}
               placeholder="e.g., 001, 002"
               maxLength={10}
-              className={errors.party_code ? 'border-red-500' : ''}
+              className={errors.party_code ? 'border-primary' : ''}
             />
             {errors.party_code && (
-              <p className="text-sm text-red-500">{errors.party_code}</p>
+              <p className="text-sm text-primary">{errors.party_code}</p>
             )}
             <p className="text-xs text-gray-500">Optional: Unique 3-digit code for this party</p>
           </div>
@@ -337,10 +337,10 @@ export default function CreatePartyDialog({
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter email address"
-              className={errors.email ? 'border-red-500' : ''}
+              className={errors.email ? 'border-primary' : ''}
             />
             {errors.email && (
-              <p className="text-sm text-red-500">{errors.email}</p>
+              <p className="text-sm text-primary">{errors.email}</p>
             )}
           </div>
 
@@ -352,10 +352,10 @@ export default function CreatePartyDialog({
               value={formData.contact_number}
               onChange={(e) => handleInputChange('contact_number', e.target.value)}
               placeholder="+91 1234567890"
-              className={errors.contact_number ? 'border-red-500' : ''}
+              className={errors.contact_number ? 'border-primary' : ''}
             />
             {errors.contact_number && (
-              <p className="text-sm text-red-500">{errors.contact_number}</p>
+              <p className="text-sm text-primary">{errors.contact_number}</p>
             )}
           </div>
 
@@ -367,10 +367,10 @@ export default function CreatePartyDialog({
               value={formData.whatsapp_number}
               onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
               placeholder="+91 1234567890"
-              className={errors.whatsapp_number ? 'border-red-500' : ''}
+              className={errors.whatsapp_number ? 'border-primary' : ''}
             />
             {errors.whatsapp_number && (
-              <p className="text-sm text-red-500">{errors.whatsapp_number}</p>
+              <p className="text-sm text-primary">{errors.whatsapp_number}</p>
             )}
           </div>
 
@@ -412,7 +412,7 @@ export default function CreatePartyDialog({
               </Button>
             </div>
             {formData.contacts.length === 0 && (
-              <p className="text-sm text-red-500">{errors.contacts}</p>
+              <p className="text-sm text-primary">{errors.contacts}</p>
             )}
             {formData.contacts.map((contact, index) => (
               <div key={index} className="p-3 border rounded-lg space-y-2 bg-gray-50">
@@ -424,7 +424,7 @@ export default function CreatePartyDialog({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeContact(index)}
-                      className="h-6 w-6 p-0 text-red-500"
+                      className="h-6 w-6 p-0 text-primary"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -439,10 +439,10 @@ export default function CreatePartyDialog({
                       value={contact.contact_name}
                       onChange={(e) => updateContact(index, 'contact_name', e.target.value)}
                       placeholder="Contact Person Name"
-                      className={errors[`contact_name_${index}`] ? 'border-red-500' : ''}
+                      className={errors[`contact_name_${index}`] ? 'border-primary' : ''}
                     />
                     {errors[`contact_name_${index}`] && (
-                      <p className="text-xs text-red-500">{errors[`contact_name_${index}`]}</p>
+                      <p className="text-xs text-primary">{errors[`contact_name_${index}`]}</p>
                     )}
                   </div>
                   <div>
@@ -453,10 +453,10 @@ export default function CreatePartyDialog({
                       value={contact.contact_number}
                       onChange={(e) => updateContact(index, 'contact_number', e.target.value)}
                       placeholder="+91 1234567890"
-                      className={errors[`contact_number_${index}`] ? 'border-red-500' : ''}
+                      className={errors[`contact_number_${index}`] ? 'border-primary' : ''}
                     />
                     {errors[`contact_number_${index}`] && (
-                      <p className="text-xs text-red-500">{errors[`contact_number_${index}`]}</p>
+                      <p className="text-xs text-primary">{errors[`contact_number_${index}`]}</p>
                     )}
                   </div>
                   <div>
@@ -578,7 +578,7 @@ export default function CreatePartyDialog({
                 value={formData.customer_type}
                 onValueChange={(value) => handleInputChange('customer_type', value)}
               >
-                <SelectTrigger className={errors.customer_type ? 'border-red-500' : ''}>
+                <SelectTrigger className={errors.customer_type ? 'border-primary' : ''}>
                   <SelectValue placeholder="Select customer type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -587,7 +587,7 @@ export default function CreatePartyDialog({
                 </SelectContent>
               </Select>
               {errors.customer_type && (
-                <p className="text-sm text-red-500">{errors.customer_type}</p>
+                <p className="text-sm text-primary">{errors.customer_type}</p>
               )}
             </div>
           )}
@@ -598,7 +598,7 @@ export default function CreatePartyDialog({
               value={formData.account_currency_id}
               onValueChange={(value) => handleInputChange('account_currency_id', value)}
             >
-              <SelectTrigger className={errors.account_currency_id ? 'border-red-500' : ''}>
+              <SelectTrigger className={errors.account_currency_id ? 'border-primary' : ''}>
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
@@ -614,7 +614,7 @@ export default function CreatePartyDialog({
               </SelectContent>
             </Select>
             {errors.account_currency_id && (
-              <p className="text-sm text-red-500">{errors.account_currency_id}</p>
+              <p className="text-sm text-primary">{errors.account_currency_id}</p>
             )}
           </div>
 
@@ -653,7 +653,7 @@ export default function CreatePartyDialog({
             <div className="space-y-2 border-t pt-4">
               <Label>Supplier Service Types *</Label>
               {errors.supplier_service_types && (
-                <p className="text-sm text-red-500">{errors.supplier_service_types}</p>
+                <p className="text-sm text-primary">{errors.supplier_service_types}</p>
               )}
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">

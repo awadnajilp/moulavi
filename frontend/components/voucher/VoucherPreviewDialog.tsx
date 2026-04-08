@@ -843,7 +843,7 @@ export function VoucherPreviewDialog({
                                 variant="ghost"
                                 onClick={() => removeHotel(idx)}
                               >
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                                <Trash2 className="h-4 w-4 text-primary" />
                               </Button>
                             </TableCell>
                         </TableRow>
@@ -1070,7 +1070,7 @@ export function VoucherPreviewDialog({
                               variant="ghost"
                               onClick={() => removeMovement(idx)}
                             >
-                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <Trash2 className="h-4 w-4 text-primary" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -1209,7 +1209,7 @@ export function VoucherPreviewDialog({
               {/* Route Summary */}
               {selectedRouteId && (
                 <div className="flex items-center space-x-3 pb-4 border-b border-gray-200">
-                  <MapPin className="h-5 w-5 text-red-600" />
+                  <MapPin className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">
                       {formatRouteDisplay(availableRoutes.find(r => r.id === selectedRouteId) || {})}
@@ -1288,7 +1288,7 @@ export function VoucherPreviewDialog({
                 <>
                   {loadingTransports ? (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="h-5 w-5 animate-spin text-red-600" />
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       <span className="ml-2 text-sm text-gray-600">Loading transport vehicles...</span>
                     </div>
                   ) : routeTransports.length === 0 ? (
@@ -1319,11 +1319,11 @@ export function VoucherPreviewDialog({
                             return (
                               <TableRow 
                                 key={transport.id}
-                                className={isSelected ? 'bg-red-50' : ''}
+                                className={isSelected ? 'bg-destructive/5' : ''}
                               >
                                 <TableCell>
                                   <div className="flex items-center space-x-2">
-                                    <Truck className={`h-4 w-4 ${isSelected ? 'text-red-600' : 'text-gray-400'}`} />
+                                    <Truck className={`h-4 w-4 ${isSelected ? 'text-primary' : 'text-gray-400'}`} />
                                     <span className="font-medium text-gray-900">{transport.vehicleType.vehicleName}</span>
                                   </div>
                                 </TableCell>
@@ -1343,12 +1343,12 @@ export function VoucherPreviewDialog({
                                       size="sm"
                                       onClick={() => handleTransportQuantityChange(transport.id, -1)}
                                       disabled={quantity === 0}
-                                      className="h-7 w-7 p-0 border-gray-300 hover:bg-red-50 hover:border-red-300"
+                                      className="h-7 w-7 p-0 border-gray-300 hover:bg-destructive/5 hover:border-red-300"
                                     >
                                       <Minus className="h-3 w-3" />
                                     </Button>
                                     <span className={`text-sm font-medium w-8 text-center ${
-                                      isSelected ? 'text-red-600' : 'text-gray-900'
+                                      isSelected ? 'text-primary' : 'text-gray-900'
                                     }`}>
                                       {quantity}
                                     </span>
@@ -1356,7 +1356,7 @@ export function VoucherPreviewDialog({
                                       variant="outline"
                                       size="sm"
                                       onClick={() => handleTransportQuantityChange(transport.id, 1)}
-                                      className="h-7 w-7 p-0 border-gray-300 hover:bg-red-50 hover:border-red-300"
+                                      className="h-7 w-7 p-0 border-gray-300 hover:bg-destructive/5 hover:border-red-300"
                                     >
                                       <Plus className="h-3 w-3" />
                                     </Button>
@@ -1364,7 +1364,7 @@ export function VoucherPreviewDialog({
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <span className={`font-semibold ${
-                                    isSelected ? 'text-red-600' : 'text-gray-900'
+                                    isSelected ? 'text-primary' : 'text-gray-900'
                                   }`}>
                                     ₹{total.toLocaleString('en-IN')}
                                   </span>

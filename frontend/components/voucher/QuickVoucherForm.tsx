@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { voucherAPI, cityMasterAPI, locationMasterAPI, transportRouteMasterAPI, transportMasterAPI } from '@/lib/api';
-import { Loader2, Plus, Minus, Trash2, MapPin, Truck } from 'lucide-react';
+import { Loader2, Plus, Minus, Trash2, MapPin, Truck, Ticket, Users, User, Plane, Building } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -980,690 +980,264 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Reservation Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Reservation Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="reservationDate">Reservation Date *</Label>
-              <Input
-                id="reservationDate"
-                type="date"
-                value={formData.reservationDate}
-                onChange={(e) => setFormData({ ...formData, reservationDate: e.target.value })}
-              />
-            </div>
+    <div className="space-y-4 pb-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-3 border-b border-secondary/20 pb-3">
+        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-md">
+          <Ticket className="h-4 w-4" />
+        </div>
+        <h2 className="text-lg font-bold text-primary uppercase tracking-tight">Create Voucher</h2>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="guestName">Guest Name *</Label>
-              <Input
-                id="guestName"
-                value={formData.guestName}
-                onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                placeholder="Enter guest name"
-              />
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+        <div className="xl:col-span-3 space-y-4">
+          {/* Guest Details */}
+          <Card className="rounded-xl border-secondary/10 shadow-sm bg-white overflow-hidden">
+            <div className="bg-primary/5 px-4 py-2 border-b border-secondary/10 flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <h3 className="text-[11px] font-bold text-primary uppercase tracking-wider">Guest Details</h3>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="paxCount">Passenger Count *</Label>
-              <Input
-                id="paxCount"
-                type="number"
-                value={formData.paxCount}
-                onChange={(e) => setFormData({ ...formData, paxCount: parseInt(e.target.value) || 1 })}
-                min="1"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guestMobile">Guest Mobile</Label>
-              <Input
-                id="guestMobile"
-                value={formData.guestMobile}
-                onChange={(e) => setFormData({ ...formData, guestMobile: e.target.value })}
-                placeholder="Enter mobile number"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="groupCode">Group Code</Label>
-              <Input
-                id="groupCode"
-                value={formData.groupCode}
-                onChange={(e) => setFormData({ ...formData, groupCode: e.target.value })}
-                placeholder="Enter group code"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Flight Details - Table Format */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Flight Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Airport</TableHead>
-                  <TableHead className="text-xs">Flight Number</TableHead>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs">Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {/* Arrival Row */}
-                <TableRow>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span className="text-xs">Arrival</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={formData.flightDetails.find(f => f.type === 'AA')?.fromLocationId || ''}
-                      onValueChange={(value) => updateArrivalFlight('fromLocationId', value)}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Select arrival airport" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {airports.map((airport: any) => (
-                          <SelectItem key={airport.id} value={airport.id} className="text-xs">
-                            {airport.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={formData.flightDetails.find(f => f.type === 'AA')?.number || ''}
-                      onChange={(e) => updateArrivalFlight('number', e.target.value)}
-                      placeholder="e.g., SV-1234"
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="date"
-                      value={formData.flightDetails.find(f => f.type === 'AA')?.date || ''}
-                      onChange={(e) => updateArrivalFlight('date', e.target.value)}
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="time"
-                      value={formData.flightDetails.find(f => f.type === 'AA')?.etd || ''}
-                      onChange={(e) => updateArrivalFlight('etd', e.target.value)}
-                      placeholder="00:00"
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                </TableRow>
-                {/* Departure Row */}
-                <TableRow>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                      <span className="text-xs">Departure</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={formData.flightDetails.find(f => f.type === 'AD')?.toLocationId || ''}
-                      onValueChange={(value) => updateDepartureFlight('toLocationId', value)}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="Select departure airport" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {airports.map((airport: any) => (
-                          <SelectItem key={airport.id} value={airport.id} className="text-xs">
-                            {airport.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={formData.flightDetails.find(f => f.type === 'AD')?.number || ''}
-                      onChange={(e) => updateDepartureFlight('number', e.target.value)}
-                      placeholder="e.g., SV-1234"
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="date"
-                      value={formData.flightDetails.find(f => f.type === 'AD')?.date || ''}
-                      onChange={(e) => updateDepartureFlight('date', e.target.value)}
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="time"
-                      value={formData.flightDetails.find(f => f.type === 'AD')?.etd || ''}
-                      onChange={(e) => updateDepartureFlight('etd', e.target.value)}
-                      placeholder="00:00"
-                      className="h-8 text-xs"
-                    />
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Route Selection - Always visible */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Select Route</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Route Type</Label>
-              <Select
-                value={selectedRouteType}
-                onValueChange={(value) => {
-                  setSelectedRouteType(value as RouteType | 'all');
-                  setSelectedRouteId(null); // Reset route selection when type changes
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Select route type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-xs">All Route Types</SelectItem>
-                  <SelectItem value="fulltrip" className="text-xs">Full Trip</SelectItem>
-                  <SelectItem value="airporttocity" className="text-xs">Airport to City</SelectItem>
-                  <SelectItem value="citytocity" className="text-xs">City to City</SelectItem>
-                  <SelectItem value="citytoairport" className="text-xs">City to Airport</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Route</Label>
-              <Select
-                value={selectedRouteId || ''}
-                onValueChange={handleRouteSelect}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder="Select a route to auto-fill movements" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredRoutes.length === 0 ? (
-                    <SelectItem value="__no_routes__" disabled className="text-xs">
-                      No routes available for selected type
-                    </SelectItem>
-                  ) : (
-                    filteredRoutes.map((route: any) => (
-                      <SelectItem key={route.id} value={route.id} className="text-xs">
-                        {formatRouteDisplay(route)}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {selectedRouteId && (
-              <div className="flex items-center space-x-2 p-2 border rounded bg-gray-50">
-                <MapPin className="h-4 w-4 text-red-600" />
-                <div>
-                  <p className="text-xs font-medium text-gray-900">
-                    {formatRouteDisplay(routes.find((r: any) => r.id === selectedRouteId) || {})}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formData.paxCount || 0} Passengers
-                  </p>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-medium text-muted-foreground ml-0.5">Reservation Date</Label>
+                  <Input 
+                    type="date" 
+                    value={formData.reservationDate} 
+                    onChange={(e) => setFormData({...formData, reservationDate: e.target.value})}
+                    className="h-8 rounded-md border-gray-200 text-xs focus:ring-secondary/20"
+                  />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-[10px] font-medium text-muted-foreground ml-0.5">Guest Name</Label>
+                  <Input 
+                    placeholder="Enter Guest Name" 
+                    value={formData.guestName} 
+                    onChange={(e) => setFormData({...formData, guestName: e.target.value})}
+                    className="h-8 rounded-md border-gray-200 text-xs focus:ring-secondary/20"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-medium text-muted-foreground ml-0.5">Guest Mobile</Label>
+                  <Input 
+                    placeholder="Mobile Number" 
+                    value={formData.guestMobile} 
+                    onChange={(e) => setFormData({...formData, guestMobile: e.target.value})}
+                    className="h-8 rounded-md border-gray-200 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-medium text-muted-foreground ml-0.5">Pax Count</Label>
+                  <div className="flex items-center gap-2 bg-muted/30 p-0.5 rounded-md border border-gray-100">
+                    <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, paxCount: Math.max(1, formData.paxCount - 1)})} className="h-6 w-6 rounded-sm"><Minus className="h-3 w-3" /></Button>
+                    <span className="flex-1 text-center font-bold text-xs">{formData.paxCount}</span>
+                    <Button variant="ghost" size="icon" onClick={() => setFormData({...formData, paxCount: formData.paxCount + 1})} className="h-6 w-6 rounded-sm"><Plus className="h-3 w-3" /></Button>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-
-      {/* Hotel Schedules - Only show for fulltrip */}
-      {selectedRouteType === 'fulltrip' && (
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Hotel Schedules</CardTitle>
-            <Button onClick={addHotel} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Hotel
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {formData.hotelSchedules.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">No hotel schedules. Click "Add Hotel" to add one.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">#</TableHead>
-                    <TableHead className="text-xs">City</TableHead>
-                    <TableHead className="text-xs">Hotel Name</TableHead>
-                    <TableHead className="text-xs">Check In</TableHead>
-                    <TableHead className="text-xs">Check Out</TableHead>
-                    <TableHead className="text-xs">Days</TableHead>
-                    <TableHead className="text-xs">BRN</TableHead>
-                    <TableHead className="text-xs">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.hotelSchedules.map((hotel, idx) => {
-                    const cityHotels = hotel.cityName ? getHotelsForCity(hotel.cityName) : [];
-                    
-                    return (
-                      <TableRow key={idx}>
-                        <TableCell>{hotel.number}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={hotel.cityName || ''}
-                            onValueChange={(value) => {
-                              const city = cities.find(c => c.name === value);
-                              updateHotel(idx, 'cityName', value);
-                              if (city) {
-                                updateHotel(idx, 'cityId', city.id);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-8 w-32 text-xs">
-                              <SelectValue placeholder="City" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cities.map((city: any) => (
-                                <SelectItem key={city.id} value={city.name} className="text-xs">
-                                  {city.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={hotel.locationId || ''}
-                            onValueChange={(value) => {
-                              updateHotel(idx, 'locationId', value);
-                              // Update corresponding movements when hotel changes
-                              updateMovementsForHotel(idx, value);
-                            }}
-                            disabled={!hotel.cityName}
-                          >
-                            <SelectTrigger className="h-8 w-40 text-xs">
-                              <SelectValue placeholder="Select hotel" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cityHotels.map((loc: any) => (
-                                <SelectItem key={loc.id} value={loc.id} className="text-xs">
-                                  {loc.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="date"
-                            value={hotel.checkIn}
-                            onChange={(e) => updateHotel(idx, 'checkIn', e.target.value)}
-                            className="w-40"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="date"
-                            value={hotel.checkOut}
-                            onChange={(e) => updateHotel(idx, 'checkOut', e.target.value)}
-                            className="w-40"
-                          />
-                        </TableCell>
-                        <TableCell>{hotel.days}</TableCell>
-                        <TableCell>
-                          <Input
-                            value={hotel.brn || ''}
-                            onChange={(e) => updateHotel(idx, 'brn', e.target.value)}
-                            className="w-32"
-                            placeholder="BRN"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeHotel(idx)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TableCell>
+          {/* Logistics & Movements */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Flight Details */}
+            <Card className="rounded-xl border-secondary/10 shadow-sm bg-white overflow-hidden">
+              <div className="px-4 py-2 border-b border-secondary/10 flex items-center justify-between bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Flight Details</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={addFlightDetail} className="h-7 px-3 rounded-md border-secondary/20 text-primary font-bold text-[9px] uppercase hover:bg-secondary transition-all">
+                  <Plus className="h-3 w-3 mr-1" /> Add Flight
+                </Button>
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/20">
+                      <TableRow className="hover:bg-transparent border-0 h-8">
+                        <TableHead className="px-4 text-[9px] font-bold uppercase py-0">Type</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase py-0">Carrier & No</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase py-0">Route</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase py-0 w-[110px]">Date</TableHead>
+                        <TableHead className="w-[40px] py-0"></TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      )}
-
-      {/* Movement Details */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Movement Details</CardTitle>
-            <Button onClick={addMovement} size="sm" variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Movement
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {formData.movementDetails.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">No movement details. Click "Add Movement" to add one.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sr</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>From City</TableHead>
-                    <TableHead>From Location</TableHead>
-                    <TableHead>To City</TableHead>
-                    <TableHead>To Location</TableHead>
-                    <TableHead>Driver 1</TableHead>
-                    <TableHead>Driver 2</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.movementDetails.map((movement, idx) => {
-                    const fromCityKey = movement.from ? movement.from.toLowerCase().trim() : '';
-                    const toCityKey = movement.to ? movement.to.toLowerCase().trim() : '';
-                    const fromCityLocations = fromCityKey ? (locationsByCity.get(fromCityKey) || []) : [];
-                    const toCityLocations = toCityKey ? (locationsByCity.get(toCityKey) || []) : [];
-                    
-                    return (
-                      <TableRow key={idx}>
-                        <TableCell>{movement.sr}</TableCell>
-                        <TableCell>
-                          <Input
-                            value={movement.route}
-                            readOnly
-                            className="w-24 bg-gray-50"
-                            placeholder="Auto"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="date"
-                            value={movement.date}
-                            onChange={(e) => updateMovement(idx, 'date', e.target.value)}
-                            className="w-40"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="time"
-                            value={movement.time}
-                            onChange={(e) => updateMovement(idx, 'time', e.target.value)}
-                            className="w-32"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={movement.from || ''}
-                            onValueChange={(value) => {
-                              const city = cities.find(c => c.name === value);
-                              updateMovement(idx, 'from', value);
-                              if (city) {
-                                updateMovement(idx, 'fromCityId', city.id);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="City" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cities.map((city: any) => (
-                                <SelectItem key={city.id} value={city.name}>
-                                  {city.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={movement.fromLocationId || ''}
-                            onValueChange={(value) => updateMovement(idx, 'fromLocationId', value)}
-                            disabled={!movement.from}
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue placeholder="Location" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fromCityLocations.map((loc: any) => (
-                                <SelectItem key={loc.id} value={loc.id}>
-                                  {loc.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={movement.to || ''}
-                            onValueChange={(value) => {
-                              const city = cities.find(c => c.name === value);
-                              updateMovement(idx, 'to', value);
-                              if (city) {
-                                updateMovement(idx, 'toCityId', city.id);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="City" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cities.map((city: any) => (
-                                <SelectItem key={city.id} value={city.name}>
-                                  {city.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={movement.toLocationId || ''}
-                            onValueChange={(value) => updateMovement(idx, 'toLocationId', value)}
-                            disabled={!movement.to}
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue placeholder="Location" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {toCityLocations.map((loc: any) => (
-                                <SelectItem key={loc.id} value={loc.id}>
-                                  {loc.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Textarea
-                            value={movement.driverDetails1 || ''}
-                            onChange={(e) => updateMovement(idx, 'driverDetails1', e.target.value)}
-                            className="w-32 min-h-[60px] resize-none"
-                            placeholder="Driver 1"
-                            rows={2}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Textarea
-                            value={movement.driverDetails2 || ''}
-                            onChange={(e) => updateMovement(idx, 'driverDetails2', e.target.value)}
-                            className="w-32 min-h-[60px] resize-none"
-                            placeholder="Driver 2"
-                            rows={2}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Textarea
-                            value={movement.vehicleNumber || ''}
-                            onChange={(e) => updateMovement(idx, 'vehicleNumber', e.target.value)}
-                            className="w-32 min-h-[60px] resize-none"
-                            placeholder="Vehicle"
-                            rows={2}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMovement(idx)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Transport Options - Moved to very bottom, with selected route as default */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Transport Options</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {selectedRouteId && (
-              <>
-                {loadingTransports ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-4 w-4 animate-spin text-red-600" />
-                    <span className="ml-2 text-xs text-gray-600">Loading transport vehicles...</span>
-                  </div>
-                ) : transports.length === 0 ? (
-                  <p className="text-xs text-gray-500 py-4 text-center">No transport vehicles available for this route.</p>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-xs font-medium">Vehicle Name</TableHead>
-                          <TableHead className="text-xs font-medium">Capacity</TableHead>
-                          <TableHead className="text-xs font-medium">Price</TableHead>
-                          <TableHead className="text-xs font-medium">Quantity</TableHead>
+                    </TableHeader>
+                    <TableBody>
+                      {formData.flightDetails.map((flight, idx) => (
+                        <TableRow key={idx} className="h-10 border-gray-50">
+                          <TableCell className="px-4">
+                            <Select value={flight.type} onValueChange={(v: any) => updateFlightDetail(idx, 'type', v)}>
+                              <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] uppercase w-[75px]"><SelectValue /></SelectTrigger>
+                              <SelectContent className="text-[9px] uppercase"><SelectItem value="AA">Arrival</SelectItem><SelectItem value="AD">Depart</SelectItem></SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Input placeholder="IATA" value={flight.carrier} onChange={(e) => updateFlightDetail(idx, 'carrier', e.target.value)} className="h-7 rounded border-gray-100 text-[10px] w-14 uppercase" />
+                              <Input placeholder="No" value={flight.number} onChange={(e) => updateFlightDetail(idx, 'number', e.target.value)} className="h-7 rounded border-gray-100 text-[10px] w-16" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Select value={flight.fromLocationId} onValueChange={(v) => updateFlightDetail(idx, 'fromLocationId', v)}>
+                                <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] w-20"><SelectValue placeholder="From" /></SelectTrigger>
+                                <SelectContent>{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px]">{a.airportCode}</SelectItem>)}</SelectContent>
+                              </Select>
+                              <span className="text-muted-foreground text-[9px]">→</span>
+                              <Select value={flight.toLocationId} onValueChange={(v) => updateFlightDetail(idx, 'toLocationId', v)}>
+                                <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] w-20"><SelectValue placeholder="To" /></SelectTrigger>
+                                <SelectContent>{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px]">{a.airportCode}</SelectItem>)}</SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                          <TableCell><Input type="date" value={flight.date} onChange={(e) => updateFlightDetail(idx, 'date', e.target.value)} className="h-7 rounded border-gray-100 text-[9px]" /></TableCell>
+                          <TableCell className="px-2 text-right"><Button variant="ghost" size="icon" onClick={() => removeFlightDetail(idx)} className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></Button></TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {transports.map((transport: any) => {
-                          const existingTransport = formData.transportOptions.find(t => t.transportId === transport.id);
-                          const quantity = existingTransport?.quantity || 0;
-                          const isSelected = quantity > 0;
-                          
-                          return (
-                            <TableRow key={transport.id} className={isSelected ? 'bg-red-50' : ''}>
-                              <TableCell className="text-xs">
-                                <div className="flex items-center space-x-2">
-                                  <Truck className={`h-3 w-3 ${isSelected ? 'text-red-600' : 'text-gray-400'}`} />
-                                  <span>{transport.vehicleType?.vehicleName || 'N/A'}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-xs">{transport.vehicleType?.paxCount || 0} PAX</TableCell>
-                              <TableCell className="text-xs">₹{Number(transport.price || 0).toLocaleString('en-IN')}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => updateTransportQuantity(transport.id, -1)}
-                                    disabled={quantity === 0}
-                                    className="h-7 w-7 p-0"
-                                  >
-                                    <Minus className="h-3 w-3" />
-                                  </Button>
-                                  <span className="w-8 text-center text-xs font-medium">{quantity}</span>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => updateTransportQuantity(transport.id, 1)}
-                                    className="h-7 w-7 p-0"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
 
-      <div className="flex justify-end space-x-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setFormData({
-              reservationDate: new Date().toISOString().split('T')[0],
-              guestName: '',
-              guestMobile: '',
-              groupCode: '',
-              paxCount: 1,
-              hotelSchedules: [],
-              movementDetails: [],
-              flightDetails: [],
-              transportOptions: [],
-            });
-            setSelectedRouteId(null);
-            setSelectedRouteType('all');
-          }}
-        >
-          Reset
-        </Button>
-        <Button onClick={handleSubmit} disabled={submitting}>
-          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Create Voucher
-        </Button>
+            {/* Hotel Schedule */}
+            <Card className="rounded-xl border-secondary/10 shadow-sm bg-white overflow-hidden">
+              <div className="px-4 py-2 border-b border-secondary/10 flex items-center justify-between bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <Building className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Hotel Schedule</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={addHotelSchedule} className="h-7 px-3 rounded-md border-secondary/20 text-primary font-bold text-[9px] uppercase hover:bg-secondary transition-all">
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Stay
+                </Button>
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/20">
+                      <TableRow className="hover:bg-transparent border-0 h-8">
+                        <TableHead className="px-4 text-[9px] font-bold uppercase w-[40px]">Sr</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase">City</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase">Hotel Name</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase w-[180px]">In/Out</TableHead>
+                        <TableHead className="text-[9px] font-bold uppercase w-[90px]">BRN</TableHead>
+                        <TableHead className="w-[40px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {formData.hotelSchedules.map((hotel, idx) => (
+                        <TableRow key={idx} className="h-10 border-gray-50">
+                          <TableCell className="px-4 text-[10px] font-bold text-primary">{idx + 1}</TableCell>
+                          <TableCell>
+                            <Select value={hotel.cityId} onValueChange={(v) => updateHotelSchedule(idx, 'cityId', v)}>
+                              <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] w-24"><SelectValue placeholder="City" /></SelectTrigger>
+                              <SelectContent>{cities.map(c => <SelectItem key={c.id} value={c.id} className="text-[9px]">{c.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Select value={hotel.locationId} onValueChange={(v) => updateHotelSchedule(idx, 'locationId', v)}>
+                              <SelectTrigger className="h-7 rounded border-gray-100 text-[9px]"><SelectValue placeholder="Select Hotel" /></SelectTrigger>
+                              <SelectContent>{getHotelsForCity(cities.find(c => c.id === hotel.cityId)?.name).map(h => <SelectItem key={h.id} value={h.id} className="text-[9px]">{h.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Input type="date" value={hotel.checkIn} onChange={(e) => updateHotelSchedule(idx, 'checkIn', e.target.value)} className="h-7 rounded border-gray-100 text-[8px] px-1" />
+                              <Input type="date" value={hotel.checkOut} onChange={(e) => updateHotelSchedule(idx, 'checkOut', e.target.value)} className="h-7 rounded border-gray-100 text-[8px] px-1" />
+                            </div>
+                          </TableCell>
+                          <TableCell><Input placeholder="BRN" value={hotel.brn} onChange={(e) => updateHotelSchedule(idx, 'brn', e.target.value)} className="h-7 rounded border-gray-100 text-[9px]" /></TableCell>
+                          <TableCell className="px-2 text-right"><Button variant="ghost" size="icon" onClick={() => removeHotelSchedule(idx)} className="h-6 w-6 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></Button></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Movement Details */}
+            <Card className="rounded-xl border-secondary/10 shadow-sm bg-white overflow-hidden">
+              <div className="bg-[#0B1120] px-4 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-secondary" />
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider">Movement Details</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={addMovementDetail} className="h-7 px-3 rounded-md border-white/10 text-white font-bold text-[9px] uppercase hover:bg-secondary transition-all">
+                  <Plus className="h-3 w-3 mr-1" /> Add Movement
+                </Button>
+              </div>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <MovementsTable movements={formData.movementDetails} onUpdate={updateMovementDetail} onRemove={removeMovementDetail} locations={locations} isCompact={true} />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Sidebar Actions */}
+        <div className="space-y-4">
+          <Card className="rounded-xl border-secondary/10 shadow-sm bg-white overflow-hidden">
+            <div className="px-4 py-2 border-b border-secondary/10 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Truck className="h-3.5 w-3.5 text-primary" />
+                <h3 className="text-[11px] font-bold text-primary uppercase tracking-wider">Transport</h3>
+              </div>
+            </div>
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-1">
+                <Label className="text-[9px] font-bold text-muted-foreground uppercase ml-0.5">Route Type</Label>
+                <Select value={selectedRouteType} onValueChange={(v: any) => { setSelectedRouteType(v); setSelectedRouteId(null); }}>
+                  <SelectTrigger className="h-8 rounded-lg text-[10px] font-bold"><SelectValue /></SelectTrigger>
+                  <SelectContent className="text-[9px] uppercase">
+                    <SelectItem value="all">All Spectrum</SelectItem>
+                    <SelectItem value="fulltrip">Full Mission</SelectItem>
+                    <SelectItem value="airporttocity">Airport Entry</SelectItem>
+                    <SelectItem value="citytoairport">City Exit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[9px] font-bold text-muted-foreground uppercase ml-0.5">Select Route</Label>
+                <Select value={selectedRouteId || ''} onValueChange={(v) => { setSelectedRouteId(v); setFormData({...formData, transportOptions: []}); }}>
+                  <SelectTrigger className="h-8 rounded-lg text-[10px] font-bold overflow-hidden"><SelectValue placeholder="Target Sector" /></SelectTrigger>
+                  <SelectContent className="max-w-[250px]">{filteredRoutes.map(r => <SelectItem key={r.id} value={r.id} className="text-[9px] leading-tight">{formatRouteDisplay(r)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              {selectedRouteId && (
+                <div className="pt-3 border-t border-gray-50 space-y-2">
+                  <p className="text-[9px] font-bold text-primary uppercase">Assets</p>
+                  <div className="space-y-2">
+                    {loadingTransports ? <div className="py-4 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-secondary/40" /></div> : transports.map(t => {
+                      const qty = formData.transportOptions.find(o => o.transportId === t.id)?.quantity || 0;
+                      return (
+                        <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100">
+                          <div className="flex flex-col"><span className="text-[9px] font-bold text-primary uppercase truncate w-24">{t.vehicleType?.vehicleName}</span><span className="text-[8px] text-secondary">SAR {Number(t.price).toLocaleString()}</span></div>
+                          <div className="flex items-center gap-2 bg-white p-0.5 rounded border border-gray-100">
+                            <Button variant="ghost" size="icon" className="h-5 w-5 hover:text-destructive" onClick={() => updateTransportQuantity(t.id, Math.max(0, qty - 1))}><Minus className="h-2 w-2" /></Button>
+                            <span className="text-[10px] font-bold">{qty}</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 hover:text-emerald-600" onClick={() => updateTransportQuantity(t.id, qty + 1)}><Plus className="h-2 w-2" /></Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 space-y-2">
+                <Button className="w-full h-10 rounded-xl bg-primary text-white font-bold uppercase tracking-wider text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95" onClick={handleSubmit} disabled={submitting}>
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <><CheckCircle2 className="h-3.5 w-3.5 mr-2" /> Finalize</>}
+                </Button>
+                <Button variant="ghost" className="w-full h-9 rounded-xl text-muted-foreground font-bold uppercase text-[9px] hover:bg-destructive/5 hover:text-destructive" onClick={() => onSuccess()}>Cancel</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

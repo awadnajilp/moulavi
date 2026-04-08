@@ -10,6 +10,7 @@ import { JourneyFlowSummary } from '../components/JourneyFlowSummary';
 import { transportRouteMasterAPI } from '@/lib/api';
 import { TransportRouteMaster } from '@/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface MovementDetailsStepProps {
   data: Step4Data | Step5Data; // Step 4 for group bookings, Step 5 for individual bookings
@@ -380,39 +381,32 @@ export const MovementDetailsStep: React.FC<MovementDetailsStepProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Unified Movements Table */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          {!hasTransportSelected && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Select transport routes in Step {transportStepNumber} to auto-generate movements, or add movements manually below.
-              </AlertDescription>
-            </Alert>
-          )}
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-gray-900">Movement Details</h4>
-              <p className="text-sm text-gray-600 mt-1">
-                {hasTransportSelected 
-                  ? 'Movements are auto-generated based on your selected transport routes. All fields are editable. Movements are sorted chronologically.'
-                  : `Add movements manually or go back to Step ${transportStepNumber} to select transport routes for auto-generation.`}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addMovement}
-              disabled={disabled}
-            >
-              <Table2 className="h-4 w-4 mr-2" />
-              Add Movement
-            </Button>
-          </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Movement Details - Compact */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-secondary/10 pb-3">
+          <h4 className="text-sm font-bold text-primary uppercase italic tracking-wider">Movement Details</h4>
+          <Button
+            type="button"
+            onClick={addMovement}
+            disabled={disabled}
+            className="h-8 px-4 rounded-lg bg-secondary text-primary font-bold uppercase shadow-sm hover:bg-secondary/90 transition-all active:scale-95 text-[9px]"
+          >
+            <Table2 className="h-3.5 w-3.5 mr-1.5" />
+            Add Movement
+          </Button>
+        </div>
 
+        {!hasTransportSelected && (
+          <div className="p-3 rounded-xl bg-secondary/5 border border-secondary/20 flex items-center gap-3">
+            <AlertCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-[9px] font-bold text-primary uppercase tracking-widest">
+              Select transport routes in Step {transportStepNumber} to auto-generate movements.
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl border border-secondary/10 shadow-sm overflow-hidden">
           <MovementsTable
             movements={movements}
             locationMasters={locationMasters}
@@ -420,19 +414,28 @@ export const MovementDetailsStep: React.FC<MovementDetailsStepProps> = ({
             onRemoveMovement={removeMovement}
             onAddMovement={addMovementAfter}
             disabled={disabled}
-            emptyMessage={`No movements. Select transport routes in Step ${transportStepNumber} to auto-generate movements, or add manually.`}
+            emptyMessage={`No movements found. Select routes or add manually.`}
             bookingId={bookingId}
           />
         </div>
-      </Card>
+      </div>
 
-      {/* Journey Overview */}
-      <JourneyFlowSummary
-        transportSegments={getTransportSegmentsForSummary()}
-        ziyaraths={getZiyarathsForSummary()}
-        locations={locations}
-        locationMasters={locationMasters}
-      />
+      {/* Summary Visualization - Compact */}
+      <div className="pt-2">
+        <div className="flex items-center gap-2 mb-4 px-1">
+           <div className="h-0.5 w-4 bg-secondary rounded-full" />
+           <h4 className="text-[8px] font-bold text-primary/40 uppercase tracking-[0.3em]">Journey Summary</h4>
+        </div>
+        
+        <div className="bg-primary/5 rounded-xl p-2 border border-secondary/10 shadow-inner scale-[0.98] origin-top">
+          <JourneyFlowSummary
+            transportSegments={getTransportSegmentsForSummary()}
+            ziyaraths={getZiyarathsForSummary()}
+            locations={locations}
+            locationMasters={locationMasters}
+          />
+        </div>
+      </div>
     </div>
   );
 };

@@ -59,7 +59,7 @@ export default function TransportDeleteConfirmationModal({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-primary hover:bg-primary/90"
           >
             {loading ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>

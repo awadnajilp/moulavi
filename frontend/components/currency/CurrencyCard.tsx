@@ -76,7 +76,7 @@ export default function CurrencyCard({
           variant="ghost"
           size="sm"
           onClick={() => onDelete(currency)}
-          className="text-red-600 hover:text-red-700"
+          className="text-primary hover:text-destructive"
           title="Delete currency"
         >
           <Trash2 className="h-4 w-4" />

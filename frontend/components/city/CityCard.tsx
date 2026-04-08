@@ -71,7 +71,7 @@ export default function CityCard({
           variant="ghost"
           size="sm"
           onClick={() => onDelete(city)}
-          className="text-red-600 hover:text-red-700"
+          className="text-primary hover:text-destructive"
           title="Delete city"
         >
           <Trash2 className="h-4 w-4" />

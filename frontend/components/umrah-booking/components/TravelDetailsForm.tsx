@@ -2,10 +2,11 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, Plane, MapPin, Clock, ArrowRightLeft } from 'lucide-react';
 import { Step2Data, Airport } from '@/lib/umrah/types';
 import { formatFlightNumber } from '@/lib/umrah/validation';
+import { cn } from '@/lib/utils';
 
 interface TravelDetailsFormProps {
   data: Step2Data;
@@ -45,208 +46,61 @@ export const TravelDetailsForm: React.FC<TravelDetailsFormProps> = ({
   };
 
   return (
-    <>
-      {/* Desktop Table View */}
-      <div className="hidden lg:block">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-200 rounded-lg overflow-hidden">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-200 p-3 text-left text-sm font-medium text-gray-700">
-                  Type
-                </th>
-                <th className="border border-gray-200 p-3 text-left text-sm font-medium text-gray-700">
-                  Airport
-                </th>
-                <th className="border border-gray-200 p-3 text-left text-sm font-medium text-gray-700">
-                  Flight Number
-                </th>
-                <th className="border border-gray-200 p-3 text-left text-sm font-medium text-gray-700">
-                  Date
-                </th>
-                <th className="border border-gray-200 p-3 text-left text-sm font-medium text-gray-700">
-                  Time
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Arrival Row */}
-              <tr className="hover:bg-gray-50">
-                <td className="border border-gray-200 p-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="font-medium text-green-700">Arrival</span>
+    <div className="space-y-6">
+      {/* Desktop Table Architecture - More Compact */}
+      <div className="hidden lg:block overflow-hidden rounded-2xl border border-secondary/10 bg-white">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-primary/5">
+              <th className="px-6 py-3 text-left text-[8px] font-black text-primary/40 uppercase tracking-[0.2em] w-[150px]">
+                Vector
+              </th>
+              <th className="px-6 py-3 text-left text-[8px] font-black text-primary/40 uppercase tracking-[0.2em]">
+                Entry/Exit Hub
+              </th>
+              <th className="px-6 py-3 text-left text-[8px] font-black text-primary/40 uppercase tracking-[0.2em] w-[150px]">
+                Carrier
+              </th>
+              <th className="px-6 py-3 text-left text-[8px] font-black text-primary/40 uppercase tracking-[0.2em] w-[150px]">
+                Timeline
+              </th>
+              <th className="px-6 py-3 text-left text-[8px] font-black text-primary/40 uppercase tracking-[0.2em] w-[120px]">
+                Window
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {/* Arrival Vector */}
+            <tr className="group hover:bg-emerald-50/20 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100 group-hover:scale-110 transition-all shadow-sm">
+                    <Plane className="h-4 w-4" />
                   </div>
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Select
-                    value={data.arrivalAirportId}
-                    onValueChange={(value) => handleAirportChange('arrivalAirportId', value)}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select arrival airport" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {airports.map((airport) => (
-                        <SelectItem key={airport.id} value={airport.id}>
-                          {airport.airportCode} - {airport.airportName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    placeholder="e.g., SV-1234"
-                    value={data.arrivalFlightNumber}
-                    onChange={(e) => {
-                      const formatted = formatFlightNumber(e.target.value);
-                      onChange({ arrivalFlightNumber: formatted });
-                    }}
-                    disabled={disabled}
-                    maxLength={7}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    type="date"
-                    value={data.arrivalDate}
-                    onChange={(e) => handleDateChange('arrivalDate', e.target.value)}
-                    disabled={disabled}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    type="time"
-                    value={data.arrivalTime || ''}
-                    onChange={(e) => onChange({ arrivalTime: e.target.value })}
-                    disabled={disabled}
-                    className="w-full"
-                  />
-                </td>
-              </tr>
-
-              {/* Departure Row */}
-              <tr className="hover:bg-gray-50">
-                <td className="border border-gray-200 p-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span className="font-medium text-red-700">Departure</span>
-                  </div>
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Select
-                    value={data.departureAirportId}
-                    onValueChange={(value) => handleAirportChange('departureAirportId', value)}
-                    disabled={disabled}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select departure airport" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {airports.map((airport) => (
-                        <SelectItem key={airport.id} value={airport.id}>
-                          {airport.airportCode} - {airport.airportName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    placeholder="e.g., SV-1234"
-                    value={data.departureFlightNumber}
-                    onChange={(e) => {
-                      const formatted = formatFlightNumber(e.target.value);
-                      onChange({ departureFlightNumber: formatted });
-                    }}
-                    disabled={disabled}
-                    maxLength={7}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    type="date"
-                    value={data.departureDate}
-                    onChange={(e) => handleDateChange('departureDate', e.target.value)}
-                    disabled={disabled}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border border-gray-200 p-3">
-                  <Input
-                    type="time"
-                    value={data.departureTime || ''}
-                    onChange={(e) => onChange({ departureTime: e.target.value })}
-                    disabled={disabled}
-                    className="w-full"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="lg:hidden">
-        <div className="space-y-4">
-          {/* Arrival Card */}
-          <Card className="p-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <h5 className="font-medium text-green-700">Arrival Details</h5>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label>Date *</Label>
-                <Input
-                  type="date"
-                  value={data.arrivalDate}
-                  onChange={(e) => handleDateChange('arrivalDate', e.target.value)}
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Time * (24-hour format)</Label>
-                <Input
-                  type="time"
-                  value={data.arrivalTime || ''}
-                  onChange={(e) => onChange({ arrivalTime: e.target.value })}
-                  disabled={disabled}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Airport *</Label>
+                  <span className="text-xs font-black text-primary uppercase italic">Arrival</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
                 <Select
                   value={data.arrivalAirportId}
                   onValueChange={(value) => handleAirportChange('arrivalAirportId', value)}
                   disabled={disabled}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select arrival airport" />
+                  <SelectTrigger className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]">
+                    <SelectValue placeholder="SELECT HUB" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-0 shadow-2xl p-1">
                     {airports.map((airport) => (
-                      <SelectItem key={airport.id} value={airport.id}>
-                        {airport.airportCode} - {airport.airportName}
+                      <SelectItem key={airport.id} value={airport.id} className="font-black text-[9px] uppercase p-2">
+                        {airport.airportCode} • {airport.airportName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Flight Number *</Label>
+              </td>
+              <td className="px-6 py-4">
                 <Input
-                  placeholder="e.g., SV-1234"
+                  placeholder="SV-XXXX"
                   value={data.arrivalFlightNumber}
                   onChange={(e) => {
                     const formatted = formatFlightNumber(e.target.value);
@@ -254,66 +108,60 @@ export const TravelDetailsForm: React.FC<TravelDetailsFormProps> = ({
                   }}
                   disabled={disabled}
                   maxLength={7}
+                  className="h-9 border-gray-100 rounded-lg font-black text-secondary focus:ring-secondary/20 bg-gray-50/30 text-center tracking-widest text-[10px]"
                 />
-                <p className="text-xs text-gray-500">
-                  Format: XX-1234 (2 letters, dash, 1-4 numbers)
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Departure Card */}
-          <Card className="p-4">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <h5 className="font-medium text-red-700">Departure Details</h5>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label>Date *</Label>
+              </td>
+              <td className="px-6 py-4">
                 <Input
                   type="date"
-                  value={data.departureDate}
-                  onChange={(e) => handleDateChange('departureDate', e.target.value)}
+                  value={data.arrivalDate}
+                  onChange={(e) => handleDateChange('arrivalDate', e.target.value)}
                   disabled={disabled}
+                  className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Time * (24-hour format)</Label>
+              </td>
+              <td className="px-6 py-4">
                 <Input
                   type="time"
-                  value={data.departureTime || ''}
-                  onChange={(e) => onChange({ departureTime: e.target.value })}
+                  value={data.arrivalTime || ''}
+                  onChange={(e) => onChange({ arrivalTime: e.target.value })}
                   disabled={disabled}
+                  className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]"
                 />
-              </div>
+              </td>
+            </tr>
 
-              <div className="space-y-2">
-                <Label>Airport *</Label>
+            {/* Departure Vector */}
+            <tr className="group hover:bg-secondary/5 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary border border-primary/10 group-hover:scale-110 transition-all shadow-sm">
+                    <Plane className="h-4 w-4 -rotate-45" />
+                  </div>
+                  <span className="text-xs font-black text-primary uppercase italic">Depart</span>
+                </div>
+              </td>
+              <td className="px-6 py-4">
                 <Select
                   value={data.departureAirportId}
                   onValueChange={(value) => handleAirportChange('departureAirportId', value)}
                   disabled={disabled}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select departure airport" />
+                  <SelectTrigger className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]">
+                    <SelectValue placeholder="SELECT HUB" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-0 shadow-2xl p-1">
                     {airports.map((airport) => (
-                      <SelectItem key={airport.id} value={airport.id}>
-                        {airport.airportCode} - {airport.airportName}
+                      <SelectItem key={airport.id} value={airport.id} className="font-black text-[9px] uppercase p-2">
+                        {airport.airportCode} • {airport.airportName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Flight Number *</Label>
+              </td>
+              <td className="px-6 py-4">
                 <Input
-                  placeholder="e.g., SV-1234"
+                  placeholder="SV-XXXX"
                   value={data.departureFlightNumber}
                   onChange={(e) => {
                     const formatted = formatFlightNumber(e.target.value);
@@ -321,30 +169,97 @@ export const TravelDetailsForm: React.FC<TravelDetailsFormProps> = ({
                   }}
                   disabled={disabled}
                   maxLength={7}
+                  className="h-9 border-gray-100 rounded-lg font-black text-secondary focus:ring-secondary/20 bg-gray-50/30 text-center tracking-widest text-[10px]"
                 />
+              </td>
+              <td className="px-6 py-4">
+                <Input
+                  type="date"
+                  value={data.departureDate}
+                  onChange={(e) => handleDateChange('departureDate', e.target.value)}
+                  disabled={disabled}
+                  className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]"
+                />
+              </td>
+              <td className="px-6 py-4">
+                <Input
+                  type="time"
+                  value={data.departureTime || ''}
+                  onChange={(e) => onChange({ departureTime: e.target.value })}
+                  disabled={disabled}
+                  className="h-9 border-gray-100 rounded-lg font-black text-primary focus:ring-secondary/20 bg-gray-50/30 text-[10px]"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile Tactical View - More Compact */}
+      <div className="lg:hidden space-y-4">
+        {/* Arrival Segment */}
+        <Card className="rounded-2xl border-0 shadow-lg shadow-primary/5 bg-white overflow-hidden">
+          <div className="bg-emerald-50/30 px-6 py-3 border-b border-emerald-100 flex items-center gap-3">
+            <Plane className="h-4 w-4 text-emerald-600" />
+            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Arrival Vector</span>
+          </div>
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Timeline</Label>
+                <Input type="date" value={data.arrivalDate} onChange={(e) => handleDateChange('arrivalDate', e.target.value)} disabled={disabled} className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-bold text-xs" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Window</Label>
+                <Input type="time" value={data.arrivalTime || ''} onChange={(e) => onChange({ arrivalTime: e.target.value })} disabled={disabled} className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-bold text-xs" />
               </div>
             </div>
-          </Card>
+            <div className="space-y-1.5">
+              <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Hub</Label>
+              <Select value={data.arrivalAirportId} onValueChange={(value) => handleAirportChange('arrivalAirportId', value)} disabled={disabled}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-black text-primary uppercase text-[9px]">
+                  <SelectValue placeholder="SELECT HUB" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl">
+                  {airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px] font-bold">{a.airportCode} - {a.airportName}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Duration Summary */}
-          {durationDays > 0 && (
-            <Card className="p-4 bg-blue-50 border-blue-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-900">Travel Duration</span>
-                </div>
-                <div
-                  className={`text-lg font-bold ${durationError ? 'text-red-600' : 'text-blue-600'}`}
-                >
-                  {durationError || `${durationDays} day${durationDays > 1 ? 's' : ''}`}
-                </div>
+        {/* Departure Segment */}
+        <Card className="rounded-2xl border-0 shadow-lg shadow-primary/5 bg-white overflow-hidden">
+          <div className="bg-primary/5 px-6 py-3 border-b border-secondary/10 flex items-center gap-3">
+            <Plane className="h-4 w-4 text-primary -rotate-45" />
+            <span className="text-[9px] font-black text-primary/60 uppercase tracking-widest">Exit Vector</span>
+          </div>
+          <CardContent className="p-6 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Timeline</Label>
+                <Input type="date" value={data.departureDate} onChange={(e) => handleDateChange('departureDate', e.target.value)} disabled={disabled} className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-bold text-xs" />
               </div>
-            </Card>
-          )}
-        </div>
+              <div className="space-y-1.5">
+                <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Window</Label>
+                <Input type="time" value={data.departureTime || ''} onChange={(e) => onChange({ departureTime: e.target.value })} disabled={disabled} className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-bold text-xs" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[8px] font-black text-primary/40 uppercase tracking-widest ml-1">Hub</Label>
+              <Select value={data.departureAirportId} onValueChange={(value) => handleAirportChange('departureAirportId', value)} disabled={disabled}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-100 bg-gray-50/30 font-black text-primary uppercase text-[9px]">
+                  <SelectValue placeholder="SELECT HUB" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-0 shadow-2xl">
+                  {airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px] font-bold">{a.airportCode} - {a.airportName}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </>
+    </div>
   );
 };
 

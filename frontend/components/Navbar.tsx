@@ -233,7 +233,7 @@ export default function Navbar() {
                       </Button>
                       <Button 
                         variant="destructive" 
-                        className="w-full justify-start rounded-xl font-bold h-12 bg-red-500 hover:bg-red-600"
+                        className="w-full justify-start rounded-xl font-bold h-12 bg-primary hover:bg-primary"
                         onClick={handleLogout}
                       >
                         <LogOut className="h-5 w-5 mr-3" />

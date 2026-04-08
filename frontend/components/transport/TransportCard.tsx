@@ -74,7 +74,7 @@ export default function TransportCard({
               size="sm"
               onClick={() => onDelete(transport)}
               title="Delete"
-              className="text-red-600 hover:text-red-700"
+              className="text-primary hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

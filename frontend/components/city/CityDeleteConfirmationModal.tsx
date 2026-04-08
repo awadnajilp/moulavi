@@ -42,7 +42,7 @@ export default function CityDeleteConfirmationModal({
                 {city.country?.countryName || 'Unknown Country'} ({city.country?.countryCode || 'N/A'})
               </p>
             </div>
-            <p className="text-xs text-red-500 mt-2">
+            <p className="text-xs text-primary mt-2">
               This will permanently remove the city. If there are locations associated with this city, deletion will be prevented.
             </p>
           </AlertDialogDescription>
@@ -52,7 +52,7 @@ export default function CityDeleteConfirmationModal({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-primary hover:bg-primary/90"
           >
             {loading ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
