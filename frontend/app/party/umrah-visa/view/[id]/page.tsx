@@ -306,7 +306,7 @@ export default function ViewUmrahVisaBookingPage() {
               </Card>
 
               {/* Flight Details */}
-              {booking.travelDetails && (
+              {booking.travelDetails && booking.travelDetails.length > 0 && (
                 <Card className="shadow-md hover:shadow-lg transition-shadow">
                   <CardHeader className="bg-gradient-to-r from-primary/5 to-white border-b border-primary/10">
                     <CardTitle className="text-xl flex items-center gap-2 text-primary">
@@ -315,87 +315,89 @@ export default function ViewUmrahVisaBookingPage() {
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-                      {/* Arrival */}
-                      <div className="border-l-4 border-l-primary bg-primary/5 rounded-r-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                            <Plane className="h-5 w-5 text-white rotate-[-45deg]" />
-                          </div>
-                          <p className="text-sm font-bold text-primary uppercase tracking-wide">Arrival</p>
-                        </div>
-                        {(() => {
-                          const arrival = formatDateTime(booking.travelDetails.arrivalDateTime);
-                          return (
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Calendar className="h-5 w-5 text-primary" />
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
-                                  <p className="text-lg font-bold text-gray-900">{arrival.date}</p>
+                      {(() => {
+                        const mainTravel = booking.travelDetails.find((t: any) => !t.isAlternate);
+                        if (!mainTravel) return <p className="p-6 text-gray-500 italic">No main travel details available</p>;
+                        
+                        const arrival = formatDateTime(mainTravel.arrivalDateTime);
+                        const departure = formatDateTime(mainTravel.departureDateTime);
+                        
+                        return (
+                          <>
+                            {/* Arrival */}
+                            <div className="border-l-4 border-l-primary bg-primary/5 rounded-r-lg p-6">
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
+                                  <Plane className="h-5 w-5 text-white rotate-[-45deg]" />
                                 </div>
+                                <p className="text-sm font-bold text-primary uppercase tracking-wide">Arrival</p>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <Clock className="h-5 w-5 text-primary" />
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
-                                  <p className="text-lg font-bold text-gray-900">{arrival.time}</p>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <Calendar className="h-5 w-5 text-primary" />
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
+                                    <p className="text-lg font-bold text-gray-900">{arrival.date}</p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="pt-3 border-t border-primary/20 space-y-2">
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
-                                  <p className="text-sm font-semibold text-gray-900">{booking.travelDetails.arrivalAirport?.name || 'N/A'}</p>
+                                <div className="flex items-center gap-3">
+                                  <Clock className="h-5 w-5 text-primary" />
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
+                                    <p className="text-lg font-bold text-gray-900">{arrival.time}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
-                                  <p className="text-sm font-semibold text-primary">{booking.travelDetails.arrivalFlightNumber || 'N/A'}</p>
+                                <div className="pt-3 border-t border-primary/20 space-y-2">
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
+                                    <p className="text-sm font-semibold text-gray-900">{mainTravel.arrivalAirport?.name || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
+                                    <p className="text-sm font-semibold text-primary">{mainTravel.arrivalFlightNumber || 'N/A'}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          );
-                        })()}
-                      </div>
 
-                      {/* Departure */}
-                      <div className="border-l-4 border-l-secondary bg-secondary/10 rounded-r-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
-                            <Plane className="h-5 w-5 text-white rotate-[45deg]" />
-                          </div>
-                          <p className="text-sm font-bold text-secondary uppercase tracking-wide">Departure</p>
-                        </div>
-                        {(() => {
-                          const departure = formatDateTime(booking.travelDetails.departureDateTime);
-                          return (
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Calendar className="h-5 w-5 text-secondary" />
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
-                                  <p className="text-lg font-bold text-gray-900">{departure.date}</p>
+                            {/* Departure */}
+                            <div className="border-l-4 border-l-secondary bg-secondary/10 rounded-r-lg p-6">
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
+                                  <Plane className="h-5 w-5 text-white rotate-[45deg]" />
                                 </div>
+                                <p className="text-sm font-bold text-secondary uppercase tracking-wide">Departure</p>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <Clock className="h-5 w-5 text-secondary" />
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
-                                  <p className="text-lg font-bold text-gray-900">{departure.time}</p>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                  <Calendar className="h-5 w-5 text-secondary" />
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide">Date</p>
+                                    <p className="text-lg font-bold text-gray-900">{departure.date}</p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="pt-3 border-t border-secondary/20 space-y-2">
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
-                                  <p className="text-sm font-semibold text-gray-900">{booking.travelDetails.departureAirport?.name || 'N/A'}</p>
+                                <div className="flex items-center gap-3">
+                                  <Clock className="h-5 w-5 text-secondary" />
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide">Time</p>
+                                    <p className="text-lg font-bold text-gray-900">{departure.time}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
-                                  <p className="text-sm font-semibold text-secondary">{booking.travelDetails.departureFlightNumber || 'N/A'}</p>
+                                <div className="pt-3 border-t border-secondary/20 space-y-2">
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Airport</p>
+                                    <p className="text-sm font-semibold text-gray-900">{mainTravel.departureAirport?.name || 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Flight Number</p>
+                                    <p className="text-sm font-semibold text-secondary">{mainTravel.departureFlightNumber || 'N/A'}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          );
-                        })()}
-                      </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>

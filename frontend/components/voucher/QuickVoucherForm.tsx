@@ -691,7 +691,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
   };
 
   // Hotel functions
-  const addHotel = () => {
+  const addHotelSchedule = () => {
     setFormData({
       ...formData,
       hotelSchedules: [
@@ -708,7 +708,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
     });
   };
 
-  const removeHotel = (index: number) => {
+  const removeHotelSchedule = (index: number) => {
     const updated = formData.hotelSchedules.filter((_, i) => i !== index);
     updated.forEach((h, idx) => {
       h.number = idx + 1;
@@ -716,7 +716,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
     setFormData({ ...formData, hotelSchedules: updated });
   };
 
-  const updateHotel = (index: number, field: keyof HotelSchedule, value: any) => {
+  const updateHotelSchedule = (index: number, field: keyof HotelSchedule, value: any) => {
     const updated = [...formData.hotelSchedules];
     updated[index] = { ...updated[index], [field]: value };
     
@@ -793,7 +793,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
   };
 
   // Movement functions
-  const addMovement = () => {
+  const addMovementDetail = () => {
     const newIndex = formData.movementDetails.length;
     setFormData({
       ...formData,
@@ -816,7 +816,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
     });
   };
 
-  const removeMovement = (index: number) => {
+  const removeMovementDetail = (index: number) => {
     const updated = formData.movementDetails.filter((_, i) => i !== index);
     updated.forEach((m, idx) => {
       m.sr = idx + 1;
@@ -824,7 +824,7 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
     setFormData({ ...formData, movementDetails: updated });
   };
 
-  const updateMovement = (index: number, field: keyof MovementDetail, value: any) => {
+  const updateMovementDetail = (index: number, field: keyof MovementDetail, value: any) => {
     const updated = [...formData.movementDetails];
     updated[index] = { ...updated[index], [field]: value };
     
@@ -869,75 +869,92 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
     setFormData({ ...formData, movementDetails: updated });
   };
 
-  // Flight functions - Separate arrival and departure
-  const updateArrivalFlight = (field: keyof FlightDetail, value: any) => {
-    const arrivalFlight = formData.flightDetails.find(f => f.type === 'AA') || {
-      type: 'AA' as const,
-      date: '',
-      carrier: '',
-      number: '',
-      from: '',
-      to: '',
-      etd: '',
-      eta: '',
-    };
-    
-    const updated = { ...arrivalFlight, [field]: value };
+  // Flight functions
+  const addFlightDetail = () => {
+    setFormData({
+      ...formData,
+      flightDetails: [
+        ...formData.flightDetails,
+        {
+          type: 'AA',
+          date: '',
+          carrier: '',
+          number: '',
+          from: '',
+          to: '',
+          etd: '',
+          eta: '',
+        },
+      ],
+    });
+  };
+
+  const removeFlightDetail = (index: number) => {
+    const updated = formData.flightDetails.filter((_, i) => i !== index);
+    setFormData({ ...formData, flightDetails: updated });
+  };
+
+  const updateFlightDetail = (index: number, field: keyof FlightDetail, value: any) => {
+    const updated = [...formData.flightDetails];
+    updated[index] = { ...updated[index], [field]: value };
     
     // When from/to location changes, update display
     if (field === 'fromLocationId') {
       const location = airports.find(a => a.id === value);
       if (location) {
-        updated.from = (location.code || location.name || '').substring(0, 10);
+        updated[index].from = (location.code || location.name || '').substring(0, 10);
       }
     }
     
     if (field === 'toLocationId') {
       const location = airports.find(a => a.id === value);
       if (location) {
-        // Use code (airport code) instead of name, truncate to 10 chars max
-        updated.to = (location.code || location.name || '').substring(0, 10);
+        updated[index].to = (location.code || location.name || '').substring(0, 10);
       }
     }
     
-    // Update or add arrival flight
-    const otherFlights = formData.flightDetails.filter(f => f.type !== 'AA');
-    setFormData({ ...formData, flightDetails: [updated, ...otherFlights] });
+    setFormData({ ...formData, flightDetails: updated });
+  };
+
+  // Keep these for backward compatibility or if needed elsewhere
+  const updateArrivalFlight = (field: keyof FlightDetail, value: any) => {
+    const index = formData.flightDetails.findIndex(f => f.type === 'AA');
+    if (index >= 0) {
+      updateFlightDetail(index, field, value);
+    } else {
+      const newFlight: FlightDetail = {
+        type: 'AA',
+        date: '',
+        carrier: '',
+        number: '',
+        from: '',
+        to: '',
+        etd: '',
+        eta: '',
+        [field]: value
+      };
+      setFormData({ ...formData, flightDetails: [...formData.flightDetails, newFlight] });
+    }
   };
 
   const updateDepartureFlight = (field: keyof FlightDetail, value: any) => {
-    const departureFlight = formData.flightDetails.find(f => f.type === 'AD') || {
-      type: 'AD' as const,
-      date: '',
-      carrier: '',
-      number: '',
-      from: '',
-      to: '',
-      etd: '',
-      eta: '',
-    };
-    
-    const updated = { ...departureFlight, [field]: value };
-    
-    // When from/to location changes, update display and airport selection
-    if (field === 'fromLocationId') {
-      const location = airports.find(a => a.id === value);
-      if (location) {
-        // Use code (airport code) instead of name, truncate to 10 chars max
-        updated.from = (location.code || location.name || '').substring(0, 10);
-      }
+    const index = formData.flightDetails.findIndex(f => f.type === 'AD');
+    if (index >= 0) {
+      updateFlightDetail(index, field, value);
+    } else {
+      const newFlight: FlightDetail = {
+        type: 'AD',
+        date: '',
+        carrier: '',
+        number: '',
+        from: '',
+        to: '',
+        etd: '',
+        eta: '',
+        [field]: value
+      };
+      setFormData({ ...formData, flightDetails: [...formData.flightDetails, newFlight] });
     }
-    
-    if (field === 'toLocationId') {
-      const location = airports.find(a => a.id === value);
-      if (location) {
-        updated.to = (location.code || location.name || '').substring(0, 10);
-      }
-    }
-    
-    // Update or add departure flight
-    const otherFlights = formData.flightDetails.filter(f => f.type !== 'AD');
-    setFormData({ ...formData, flightDetails: [updated, ...otherFlights] });
   };
 
   // Transport functions
@@ -1171,7 +1188,12 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
               </div>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <MovementsTable movements={formData.movementDetails} onUpdate={updateMovementDetail} onRemove={removeMovementDetail} locations={locations} isCompact={true} />
+                  <MovementsTable 
+                    movements={formData.movementDetails as any} 
+                    onUpdateMovement={updateMovementDetail as any} 
+                    onRemoveMovement={removeMovementDetail} 
+                    locationMasters={locations} 
+                  />
                 </div>
               </CardContent>
             </Card>

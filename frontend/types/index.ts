@@ -188,7 +188,7 @@ export interface UmrahPassenger {
 }
 
 export interface UmrahVisaBooking {
-  id?: string;
+  id: string;
   partyId?: string;
   submittedAt?: string;
   bookingMode: BookingMode;
@@ -235,7 +235,9 @@ export interface UmrahVisaBooking {
     name: string;
     email: string;
   };
-  travelDetails?: {
+  travelDetails?: Array<{
+    id?: string;
+    isAlternate?: boolean;
     arrivalDateTime?: string;
     departureDateTime?: string;
     arrivalFlightNumber?: string;
@@ -250,7 +252,7 @@ export interface UmrahVisaBooking {
       name: string;
       code: string;
     };
-  };
+  }>;
   sponsorIqamaDetails?: {
     iqamaNumber?: string;
     iqamaSponserName?: string;
@@ -260,6 +262,7 @@ export interface UmrahVisaBooking {
   };
   hotelBookings?: Array<{
     id: string;
+    isAlternate?: boolean;
     hotelId: string;
     locationId: string;
     checkIn: string;
@@ -272,6 +275,26 @@ export interface UmrahVisaBooking {
       id: string;
       locationName: string;
     };
+  }>;
+  transportBookings?: Array<{
+    id: string;
+    isAlternate?: boolean;
+    transportMasterId: string;
+    travelDateTime?: string;
+    transportMaster?: TransportMaster;
+  }>;
+  movementDetails?: Array<{
+    id: string;
+    isAlternate?: boolean;
+    travelDateTime: string;
+    fromCityId: string;
+    fromLocationId: string;
+    toCityId: string;
+    toLocationId: string;
+    fromCity?: { name: string };
+    fromLocation?: { name: string };
+    toCity?: { name: string };
+    toLocation?: { name: string };
   }>;
   umrahVisaProvider?: {
     id: string;

@@ -883,4 +883,126 @@ router.post('/seed-ziyarah-hotels', authenticate, authorize('admin'), async (req
   }
 });
 
+/**
+ * PATCH /api/umrah-visa/:bookingId/alternate-info
+ * Update alternate booking information (flights, hotels, transport, movements)
+ */
+router.patch('/:bookingId/alternate-info', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const {
+      travelDetails,
+      hotelBookings,
+      transportBookings,
+      movementDetails
+    } = req.body;
+
+    const results = await prisma.$transaction(async (tx) => {
+      // 1. Update Alternate Travel Details
+      let updatedTravel = null;
+      if (travelDetails) {
+        updatedTravel = await tx.umrahTravelDetails.upsert({
+          where: {
+            bookingId_isAlternate: {
+              bookingId,
+              isAlternate: true,
+            },
+          },
+          update: {
+            arrivalDateTime: new Date(travelDetails.arrivalDateTime),
+            arrivalAirportId: travelDetails.arrivalAirportId,
+            arrivalFlightNumber: travelDetails.arrivalFlightNumber,
+            departureDateTime: new Date(travelDetails.departureDateTime),
+            departureAirportId: travelDetails.departureAirportId,
+            departureFlightNumber: travelDetails.departureFlightNumber,
+          },
+          create: {
+            bookingId,
+            isAlternate: true,
+            arrivalDateTime: new Date(travelDetails.arrivalDateTime),
+            arrivalAirportId: travelDetails.arrivalAirportId,
+            arrivalFlightNumber: travelDetails.arrivalFlightNumber,
+            departureDateTime: new Date(travelDetails.departureDateTime),
+            departureAirportId: travelDetails.departureAirportId,
+            departureFlightNumber: travelDetails.departureFlightNumber,
+          },
+        });
+      }
+
+      // 2. Update Alternate Hotel Bookings
+      if (hotelBookings) {
+        // Remove existing alternate hotel bookings
+        await tx.umrahHotelBooking.deleteMany({
+          where: { bookingId, isAlternate: true },
+        });
+
+        // Create new ones
+        if (hotelBookings.length > 0) {
+          await tx.umrahHotelBooking.createMany({
+            data: hotelBookings.map((h: any) => ({
+              bookingId,
+              isAlternate: true,
+              cityId: h.cityId,
+              hotelId: h.hotelId,
+              checkInDate: new Date(h.checkInDate),
+              checkOutDate: new Date(h.checkOutDate),
+              brn: h.brn || null,
+            })),
+          });
+        }
+      }
+
+      // 3. Update Alternate Transport Bookings
+      if (transportBookings) {
+        // Remove existing alternate transport bookings
+        await tx.umrahTransportBooking.deleteMany({
+          where: { bookingId, isAlternate: true },
+        });
+
+        // Create new ones
+        if (transportBookings.length > 0) {
+          await tx.umrahTransportBooking.createMany({
+            data: transportBookings.map((t: any) => ({
+              bookingId,
+              isAlternate: true,
+              transportMasterId: t.transportMasterId,
+              travelDateTime: t.travelDateTime ? new Date(t.travelDateTime) : null,
+            })),
+          });
+        }
+      }
+
+      // 4. Update Alternate Movement Details
+      if (movementDetails) {
+        // Remove existing alternate movement details
+        await tx.umrahMovementDetail.deleteMany({
+          where: { bookingId, isAlternate: true },
+        });
+
+        // Create new ones
+        if (movementDetails.length > 0) {
+          await tx.umrahMovementDetail.createMany({
+            data: movementDetails.map((m: any) => ({
+              bookingId,
+              isAlternate: true,
+              travelDateTime: new Date(m.travelDateTime),
+              fromCityId: m.fromCityId,
+              fromLocationId: m.fromLocationId,
+              toCityId: m.toCityId,
+              toLocationId: m.toLocationId,
+            })),
+          });
+        }
+      }
+
+      return { updatedTravel };
+    });
+
+    res.json({ message: 'Alternate info updated successfully', results });
+  } catch (error: any) {
+    console.error('Error updating alternate info:', error);
+    res.status(500).json({ error: 'Failed to update alternate info', message: error.message });
+  }
+});
+
 export default router;

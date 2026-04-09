@@ -129,7 +129,7 @@ export class CancellationService {
       }
 
       // Get applicable policy
-      const arrivalDate = booking.travelDetails?.arrivalDateTime;
+      const arrivalDate = booking.travelDetails?.find((t: any) => !t.isAlternate)?.arrivalDateTime;
       if (!arrivalDate) {
         return {
           canCancel: false,

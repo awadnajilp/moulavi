@@ -697,28 +697,32 @@ router.get('/:bookingId/voucher-data', authenticate, async (req, res) => {
         paxCount: 0, // Not stored in movement details (only in transport bookings)
         price: 0, // Not stored in movement details (only in transport bookings)
       })),
-      flightDetails: booking.travelDetails ? [
-        {
-          type: 'AA', // Arrival
-          date: booking.travelDetails.arrivalDateTime ? formatDate(booking.travelDetails.arrivalDateTime) : '',
-          carrier: booking.travelDetails.arrivalFlightNumber?.split('-')[0] || '',
-          number: booking.travelDetails.arrivalFlightNumber?.split('-')[1] || '',
-          arrivalAirportId: booking.travelDetails.arrivalAirportId,
-          arrivalAirport: booking.travelDetails.arrivalAirport.name || booking.travelDetails.arrivalAirport.code || '',
-          etd: '',
-          eta: booking.travelDetails.arrivalDateTime ? formatTime(booking.travelDetails.arrivalDateTime) : '',
-        },
-        {
-          type: 'AD', // Departure
-          date: booking.travelDetails.departureDateTime ? formatDate(booking.travelDetails.departureDateTime) : '',
-          carrier: booking.travelDetails.departureFlightNumber?.split('-')[0] || '',
-          number: booking.travelDetails.departureFlightNumber?.split('-')[1] || '',
-          departureAirportId: booking.travelDetails.departureAirportId,
-          departureAirport: booking.travelDetails.departureAirport.name || booking.travelDetails.departureAirport.code || '',
-          etd: booking.travelDetails.departureDateTime ? formatTime(booking.travelDetails.departureDateTime) : '',
-          eta: '',
-        },
-      ] : [],
+      flightDetails: (() => {
+        const mainTravel = booking.travelDetails?.find((t: any) => !t.isAlternate);
+        if (!mainTravel) return [];
+        return [
+          {
+            type: 'AA', // Arrival
+            date: mainTravel.arrivalDateTime ? formatDate(mainTravel.arrivalDateTime) : '',
+            carrier: mainTravel.arrivalFlightNumber?.split('-')[0] || '',
+            number: mainTravel.arrivalFlightNumber?.split('-')[1] || '',
+            arrivalAirportId: mainTravel.arrivalAirportId,
+            arrivalAirport: mainTravel.arrivalAirport.name || mainTravel.arrivalAirport.code || '',
+            etd: '',
+            eta: mainTravel.arrivalDateTime ? formatTime(mainTravel.arrivalDateTime) : '',
+          },
+          {
+            type: 'AD', // Departure
+            date: mainTravel.departureDateTime ? formatDate(mainTravel.departureDateTime) : '',
+            carrier: mainTravel.departureFlightNumber?.split('-')[0] || '',
+            number: mainTravel.departureFlightNumber?.split('-')[1] || '',
+            departureAirportId: mainTravel.departureAirportId,
+            departureAirport: mainTravel.departureAirport.name || mainTravel.departureAirport.code || '',
+            etd: mainTravel.departureDateTime ? formatTime(mainTravel.departureDateTime) : '',
+            eta: '',
+          },
+        ];
+      })(),
       // Aggregate transport bookings by transportMasterId to get quantity
       transportOptions: (() => {
         const transportMap = new Map<string, any>();

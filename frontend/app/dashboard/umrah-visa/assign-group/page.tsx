@@ -306,7 +306,14 @@ export default function AssignGroupPage() {
                               </div>
                             </TableCell>
                             <TableCell><div className="font-medium">{booking.party?.partyName || 'N/A'}</div></TableCell>
-                            <TableCell><div className="text-sm">{booking.travelDetails?.arrivalDateTime ? formatDate(booking.travelDetails.arrivalDateTime) : 'N/A'}</div></TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {(() => {
+                                  const mainTravel = booking.travelDetails?.find(t => !t.isAlternate);
+                                  return mainTravel?.arrivalDateTime ? formatDate(mainTravel.arrivalDateTime) : 'N/A';
+                                })()}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               {booking.documentsDownloadedByUser ? (
                                 <div className="space-y-1 text-xs">

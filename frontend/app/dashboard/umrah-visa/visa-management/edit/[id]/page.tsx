@@ -90,21 +90,22 @@ export default function EditUmrahVisaBookingPage() {
       setGroupName(b.groupName || '');
 
       // Travel details - parse datetime
-      if (b.travelDetails?.arrivalDateTime) {
-        const arrival = new Date(b.travelDetails.arrivalDateTime);
+      const mainTravel = b.travelDetails?.find((t: any) => !t.isAlternate);
+      if (mainTravel?.arrivalDateTime) {
+        const arrival = new Date(mainTravel.arrivalDateTime);
         setArrivalDate(arrival.toISOString().split('T')[0]);
         setArrivalTime(arrival.toTimeString().slice(0, 5));
       }
-      setArrivalAirportId(b.travelDetails?.arrivalAirportId || '');
-      setArrivalFlightNumber(b.travelDetails?.arrivalFlightNumber || '');
+      setArrivalAirportId(mainTravel?.arrivalAirportId || '');
+      setArrivalFlightNumber(mainTravel?.arrivalFlightNumber || '');
 
-      if (b.travelDetails?.departureDateTime) {
-        const departure = new Date(b.travelDetails.departureDateTime);
+      if (mainTravel?.departureDateTime) {
+        const departure = new Date(mainTravel.departureDateTime);
         setDepartureDate(departure.toISOString().split('T')[0]);
         setDepartureTime(departure.toTimeString().slice(0, 5));
       }
-      setDepartureAirportId(b.travelDetails?.departureAirportId || '');
-      setDepartureFlightNumber(b.travelDetails?.departureFlightNumber || '');
+      setDepartureAirportId(mainTravel?.departureAirportId || '');
+      setDepartureFlightNumber(mainTravel?.departureFlightNumber || '');
 
       // Accommodation
       setAccommodationType(b.accommodationType || 'hotel');

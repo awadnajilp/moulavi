@@ -113,10 +113,12 @@ export class ConflictService {
     const existingBooking = await prisma.umrahVisaBooking.findFirst({
       where: {
         travelDetails: {
-          OR: [
-            { arrivalFlightNumber: flightNumber },
-            { departureFlightNumber: flightNumber }
-          ]
+          some: {
+            OR: [
+              { arrivalFlightNumber: flightNumber },
+              { departureFlightNumber: flightNumber }
+            ]
+          }
         },
         isDeleted: false,
         status: {
@@ -160,16 +162,18 @@ export class ConflictService {
           not: 'cancelled'
         },
         travelDetails: {
-          OR: [
-            {
-              arrivalDateTime: {
-                lte: new Date(departureDate)
-              },
-              departureDateTime: {
-                gte: new Date(arrivalDate)
+          some: {
+            OR: [
+              {
+                arrivalDateTime: {
+                  lte: new Date(departureDate)
+                },
+                departureDateTime: {
+                  gte: new Date(arrivalDate)
+                }
               }
-            }
-          ]
+            ]
+          }
         }
       },
       select: {

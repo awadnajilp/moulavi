@@ -724,11 +724,21 @@ router.patch('/:bookingId/travel-details', authenticate, async (req, res) => {
 
     // Get existing travel details to preserve values if not provided
     const existing = await prisma.umrahTravelDetails.findUnique({
-      where: { bookingId },
+      where: {
+        bookingId_isAlternate: {
+          bookingId,
+          isAlternate: false,
+        },
+      },
     });
 
     const travel = await prisma.umrahTravelDetails.upsert({
-      where: { bookingId },
+      where: {
+        bookingId_isAlternate: {
+          bookingId,
+          isAlternate: false,
+        },
+      },
       update: {
         arrivalDateTime: arrivalDateTime ?? existing?.arrivalDateTime,
         arrivalFlightNumber: arrivalFlightNumber ?? existing?.arrivalFlightNumber,
@@ -739,6 +749,7 @@ router.patch('/:bookingId/travel-details', authenticate, async (req, res) => {
       },
       create: {
         bookingId,
+        isAlternate: false,
         arrivalDateTime: arrivalDateTime ?? new Date(),
         arrivalFlightNumber: arrivalFlightNumber ?? '',
         departureDateTime: departureDateTime ?? new Date(),

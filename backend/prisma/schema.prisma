@@ -80,14 +80,14 @@ model UmrahVisaBooking {
   groupName                 String?                   @map("group_name")
   passengerCount            Int                       @map("passenger_count")
   umrahVisaProviderId       String?                   @map("umrah_visa_provider_id")
-  status                    UmrahVisaStatus           @default("pending")
+  status                    UmrahVisaStatus           @default(pending)
   createdAt                 DateTime                  @default(now()) @map("created_at")
   updatedAt                 DateTime                  @default(now()) @updatedAt @map("updated_at")
   deletedAt                 DateTime?                 @map("deleted_at")
   isDeleted                 Boolean                   @default(false) @map("is_deleted")
   hasGroupNumber            Boolean                   @default(false) @map("has_group_number")
   accommodationType         AccommodationType?        @map("accommodation_type")
-  visaType                  VisaType                  @default("individual_visa") @map("visa_type")
+  visaType                  VisaType                  @default(individual_visa) @map("visa_type")
   hasTransportation         Boolean                   @default(false) @map("has_transportation")
   voucherGeneratedAt        DateTime?                 @map("voucher_generated_at")
   voucherGeneratedBy        String?                   @map("voucher_generated_by")
@@ -105,7 +105,7 @@ model UmrahVisaBooking {
   passengers                UmrahPassenger[]
   sponsorIqamaDetails       UmrahSponserIqamaDetails?
   transportBookings         UmrahTransportBooking[]
-  travelDetails             UmrahTravelDetails?
+  travelDetails             UmrahTravelDetails[]
   lastUpdatedByUser         User?                     @relation("BookingLastUpdatedBy", fields: [lastUpdatedBy], references: [id])
   documentsDownloadedByUser User?                     @relation("BookingDocumentsDownloadedBy", fields: [documentsDownloadedBy], references: [id])
   umrahVisaProvider         Party?                    @relation("UmrahVisaProvider", fields: [umrahVisaProviderId], references: [id])
@@ -396,7 +396,8 @@ model TransportMaster {
 
 model UmrahTravelDetails {
   id                    String           @id @default(uuid())
-  bookingId             String           @unique @map("booking_id")
+  bookingId             String           @map("booking_id")
+  isAlternate           Boolean          @default(false) @map("is_alternate")
   arrivalDateTime       DateTime         @map("arrival_datetime")
   arrivalAirportId      String           @map("arrival_airport_id")
   arrivalFlightNumber   String           @map("arrival_flight_number")
@@ -409,6 +410,7 @@ model UmrahTravelDetails {
   booking               UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   arrivalAirport        LocationMaster   @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
 
+  @@unique([bookingId, isAlternate])
   @@index([bookingId])
   @@index([arrivalDateTime])
   @@index([departureDateTime])
@@ -420,6 +422,7 @@ model UmrahTravelDetails {
 model UmrahHotelBooking {
   id           String           @id @default(uuid())
   bookingId    String           @map("booking_id")
+  isAlternate  Boolean          @default(false) @map("is_alternate")
   cityId       String           @map("city_id")
   hotelId      String           @map("hotel_id")
   checkInDate  DateTime         @map("checkin_date")
@@ -432,6 +435,7 @@ model UmrahHotelBooking {
   booking      UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
+  @@index([isAlternate])
   @@index([cityId])
   @@index([hotelId])
   @@index([checkInDate])
@@ -461,6 +465,7 @@ model UmrahSponserIqamaDetails {
 model UmrahTransportBooking {
   id                String           @id @default(uuid())
   bookingId         String           @map("booking_id")
+  isAlternate       Boolean          @default(false) @map("is_alternate")
   transportMasterId String           @map("transport_master_id")
   travelDateTime    DateTime?        @map("travel_datetime")
   createdAt         DateTime         @default(now()) @map("created_at")
@@ -469,6 +474,7 @@ model UmrahTransportBooking {
   booking           UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
+  @@index([isAlternate])
   @@index([transportMasterId])
   @@index([travelDateTime])
   @@map("umrah_transport_bookings")
@@ -477,6 +483,7 @@ model UmrahTransportBooking {
 model UmrahMovementDetail {
   id             String           @id @default(uuid())
   bookingId      String           @map("booking_id")
+  isAlternate    Boolean          @default(false) @map("is_alternate")
   travelDateTime DateTime         @map("travel_datetime")
   fromCityId     String           @map("from_city_id")
   fromLocationId String           @map("from_location_id")
@@ -491,6 +498,7 @@ model UmrahMovementDetail {
   booking        UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
+  @@index([isAlternate])
   @@index([travelDateTime])
   @@index([fromCityId])
   @@index([toCityId])

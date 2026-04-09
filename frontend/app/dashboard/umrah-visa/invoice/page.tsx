@@ -132,7 +132,7 @@ export default function InvoicePage() {
   };
 
   const handleGenerateBill = async () => {
-    if (!selectedBooking) return;
+    if (!selectedBooking || !selectedBooking.id) return;
     
     try {
       setIsGeneratingBills(true);
@@ -353,8 +353,17 @@ export default function InvoicePage() {
                                 <div className="text-xs text-gray-500">{booking.groupName || 'No group'}</div>
                               </div>
                             </TableCell>
-                            <TableCell><div className="font-medium">{booking.party?.partyName || 'N/A'}</div></TableCell>
-                            <TableCell><div className="text-sm">{booking.travelDetails?.arrivalDateTime ? formatDate(booking.travelDetails.arrivalDateTime) : 'N/A'}</div></TableCell>
+                            <TableCell>
+                              <div className="font-medium">{booking.party?.partyName || 'N/A'}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {(() => {
+                                  const mainTravel = booking.travelDetails?.find(t => !t.isAlternate);
+                                  return mainTravel?.arrivalDateTime ? formatDate(mainTravel.arrivalDateTime) : 'N/A';
+                                })()}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <Badge className={`${UMRAH_VISA_STATUS_CONFIG[booking.status || 'bill'].color} text-xs`}>
                                 {UMRAH_VISA_STATUS_CONFIG[booking.status || 'bill'].label}

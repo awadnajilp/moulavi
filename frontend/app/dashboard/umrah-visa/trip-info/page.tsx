@@ -563,106 +563,120 @@ export default function TripInfoPage() {
                             {/* Arrival Details */}
                             <TableCell>
                               <div className="space-y-1">
-                                {activeTab === 'hotel' ? (
-                                  <>
-                                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                      {booking.travelDetails?.arrivalDateTime ? formatDateTime(booking.travelDetails.arrivalDateTime) : 'N/A'}
-                                      {booking.travelDetails?.arrivalDateTime && (
-                                        <button
-                                          onClick={() => {
-                                            const dateTime = booking.travelDetails?.arrivalDateTime;
-                                            if (dateTime) {
-                                              copyToClipboard(formatDateTime(dateTime), 'Arrival Date/Time');
-                                            }
-                                          }}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
-                                          title="Copy arrival date/time"
-                                        >
-                                          <Copy className="h-3 w-3 text-gray-500" />
-                                        </button>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-gray-600 flex items-center gap-1">
-                                      Flight: {booking.travelDetails?.arrivalFlightNumber || 'N/A'}
-                                      {booking.travelDetails?.arrivalFlightNumber && (
-                                        <button
-                                          onClick={() => {
-                                            const flightNumber = booking.travelDetails?.arrivalFlightNumber;
-                                            if (flightNumber) {
-                                              copyToClipboard(flightNumber, 'Arrival Flight');
-                                            }
-                                          }}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
-                                          title="Copy flight number"
-                                        >
-                                          <Copy className="h-3 w-3 text-gray-500" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {booking.travelDetails?.arrivalDateTime ? formatDate(booking.travelDetails.arrivalDateTime) : 'N/A'}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      {iqamaDetails?.sponserMobileNumber || 'N/A'}
-                                    </div>
-                                  </>
-                                )}
+                                {(() => {
+                                  const mainTravel = booking.travelDetails?.find(t => !t.isAlternate);
+                                  if (activeTab === 'hotel') {
+                                    return (
+                                      <>
+                                        <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                          {mainTravel?.arrivalDateTime ? formatDateTime(mainTravel.arrivalDateTime) : 'N/A'}
+                                          {mainTravel?.arrivalDateTime && (
+                                            <button
+                                              onClick={() => {
+                                                const dateTime = mainTravel?.arrivalDateTime;
+                                                if (dateTime) {
+                                                  copyToClipboard(formatDateTime(dateTime), 'Arrival Date/Time');
+                                                }
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
+                                              title="Copy arrival date/time"
+                                            >
+                                              <Copy className="h-3 w-3 text-gray-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                                          Flight: {mainTravel?.arrivalFlightNumber || 'N/A'}
+                                          {mainTravel?.arrivalFlightNumber && (
+                                            <button
+                                              onClick={() => {
+                                                const flightNumber = mainTravel?.arrivalFlightNumber;
+                                                if (flightNumber) {
+                                                  copyToClipboard(flightNumber, 'Arrival Flight');
+                                                }
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
+                                              title="Copy flight number"
+                                            >
+                                              <Copy className="h-3 w-3 text-gray-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </>
+                                    );
+                                  } else {
+                                    return (
+                                      <>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {mainTravel?.arrivalDateTime ? formatDate(mainTravel.arrivalDateTime) : 'N/A'}
+                                        </div>
+                                        <div className="text-xs text-gray-600">
+                                          {iqamaDetails?.sponserMobileNumber || 'N/A'}
+                                        </div>
+                                      </>
+                                    );
+                                  }
+                                })()}
                               </div>
                             </TableCell>
 
                             {/* Departure Details */}
                             <TableCell>
                               <div className="space-y-1">
-                                {activeTab === 'hotel' ? (
-                                  <>
-                                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                      {booking.travelDetails?.departureDateTime ? formatDateTime(booking.travelDetails.departureDateTime) : 'N/A'}
-                                      {booking.travelDetails?.departureDateTime && (
-                                        <button
-                                          onClick={() => {
-                                            const dateTime = booking.travelDetails?.departureDateTime;
-                                            if (dateTime) {
-                                              copyToClipboard(formatDateTime(dateTime), 'Departure Date/Time');
-                                            }
-                                          }}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
-                                          title="Copy departure date/time"
-                                        >
-                                          <Copy className="h-3 w-3 text-gray-500" />
-                                        </button>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-gray-600 flex items-center gap-1">
-                                      Flight: {booking.travelDetails?.departureFlightNumber || 'N/A'}
-                                      {booking.travelDetails?.departureFlightNumber && (
-                                        <button
-                                          onClick={() => {
-                                            const flightNumber = booking.travelDetails?.departureFlightNumber;
-                                            if (flightNumber) {
-                                              copyToClipboard(flightNumber, 'Departure Flight');
-                                            }
-                                          }}
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
-                                          title="Copy flight number"
-                                        >
-                                          <Copy className="h-3 w-3 text-gray-500" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {booking.travelDetails?.departureDateTime ? formatDate(booking.travelDetails.departureDateTime) : 'N/A'}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      {iqamaDetails?.sponserMobileNumber || 'N/A'}
-                                    </div>
-                                  </>
-                                )}
+                                {(() => {
+                                  const mainTravel = booking.travelDetails?.find(t => !t.isAlternate);
+                                  if (activeTab === 'hotel') {
+                                    return (
+                                      <>
+                                        <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                          {mainTravel?.departureDateTime ? formatDateTime(mainTravel.departureDateTime) : 'N/A'}
+                                          {mainTravel?.departureDateTime && (
+                                            <button
+                                              onClick={() => {
+                                                const dateTime = mainTravel?.departureDateTime;
+                                                if (dateTime) {
+                                                  copyToClipboard(formatDateTime(dateTime), 'Departure Date/Time');
+                                                }
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
+                                              title="Copy departure date/time"
+                                            >
+                                              <Copy className="h-3 w-3 text-gray-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                                          Flight: {mainTravel?.departureFlightNumber || 'N/A'}
+                                          {mainTravel?.departureFlightNumber && (
+                                            <button
+                                              onClick={() => {
+                                                const flightNumber = mainTravel?.departureFlightNumber;
+                                                if (flightNumber) {
+                                                  copyToClipboard(flightNumber, 'Departure Flight');
+                                                }
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-gray-100 rounded"
+                                              title="Copy flight number"
+                                            >
+                                              <Copy className="h-3 w-3 text-gray-500" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </>
+                                    );
+                                  } else {
+                                    return (
+                                      <>
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {mainTravel?.departureDateTime ? formatDate(mainTravel.departureDateTime) : 'N/A'}
+                                        </div>
+                                        <div className="text-xs text-gray-600">
+                                          {iqamaDetails?.sponserMobileNumber || 'N/A'}
+                                        </div>
+                                      </>
+                                    );
+                                  }
+                                })()}
                               </div>
                             </TableCell>
 
