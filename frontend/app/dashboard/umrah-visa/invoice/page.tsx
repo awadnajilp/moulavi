@@ -133,12 +133,31 @@ export default function InvoicePage() {
 
   const handleGenerateBill = async () => {
     if (!selectedBooking) return;
+    
     try {
-      toast.info('Generating bill... (Functionality coming soon)');
+      setIsGeneratingBills(true);
+      const response = await umrahVisaAPI.generateBill(selectedBooking.id);
+      
+      // Download the PDF
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Bill_${selectedBooking.groupNumber || selectedBooking.id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      
+      toast.success('Bill generated successfully');
       setShowGenerateDialog(false);
       setSelectedBooking(null);
+      // Refresh data after generation
+      handleFetchFromSheet();
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Error generating bill:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to generate bill');
+    } finally {
+      setIsGeneratingBills(false);
     }
   };
 
@@ -362,12 +381,19 @@ export default function InvoicePage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              This functionality will be implemented soon.
+              Are you sure you want to generate the bill for this booking? This will create a PDF and send it to the party's email.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowGenerateDialog(false)}>Cancel</Button>
-            <Button onClick={handleGenerateBill} disabled>Generate Bill (Coming Soon)</Button>
+            <Button variant="outline" onClick={() => setShowGenerateDialog(false)} disabled={isGeneratingBills}>Cancel</Button>
+            <Button onClick={handleGenerateBill} disabled={isGeneratingBills}>
+              {isGeneratingBills ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Generating...
+                </>
+              ) : 'Generate Bill'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -18,11 +18,11 @@ model User {
   updatedAt                   DateTime               @default(now()) @updatedAt @map("updated_at")
   auditLogs                   AuditLog[]
   statusHistory               BookingStatusHistory[]
-  createdParties              Party[]                @relation("CreatedBy")
   party                       Party?                 @relation("PartyUser")
+  createdParties              Party[]                @relation("CreatedBy")
   refreshTokens               RefreshToken[]
-  bookingsDocumentsDownloaded UmrahVisaBooking[]     @relation("BookingDocumentsDownloadedBy")
   bookingsLastUpdated         UmrahVisaBooking[]     @relation("BookingLastUpdatedBy")
+  bookingsDocumentsDownloaded UmrahVisaBooking[]     @relation("BookingDocumentsDownloadedBy")
   vouchersGenerated           Voucher[]              @relation("VoucherGeneratedBy")
 
   @@index([email])
@@ -54,14 +54,14 @@ model Party {
   panNumber             String?            @map("pan_number")
   aadhaarNumber         String?            @map("aadhaar_number")
   supplierServiceTypes  Json?              @map("supplier_service_types")
-  accountCurrency       CurrencyMaster     @relation(fields: [accountCurrencyId], references: [id])
-  creator               User               @relation("CreatedBy", fields: [createdBy], references: [id])
   user                  User?              @relation("PartyUser", fields: [userId], references: [id])
+  creator               User               @relation("CreatedBy", fields: [createdBy], references: [id])
+  accountCurrency       CurrencyMaster     @relation(fields: [accountCurrencyId], references: [id])
   contacts              PartyContact[]
   documents             PartyDocument[]
+  pricingMasters        PricingMaster[]
   umrahVisaBookings     UmrahVisaBooking[] @relation("UmrahVisaProvider")
   bookings              UmrahVisaBooking[] @relation("BookingParty")
-  pricingMasters        PricingMaster[]
 
   @@index([email])
   @@index([partyName])
@@ -80,14 +80,14 @@ model UmrahVisaBooking {
   groupName                 String?                   @map("group_name")
   passengerCount            Int                       @map("passenger_count")
   umrahVisaProviderId       String?                   @map("umrah_visa_provider_id")
-  status                    UmrahVisaStatus           @default(pending)
+  status                    UmrahVisaStatus           @default("pending")
   createdAt                 DateTime                  @default(now()) @map("created_at")
   updatedAt                 DateTime                  @default(now()) @updatedAt @map("updated_at")
   deletedAt                 DateTime?                 @map("deleted_at")
   isDeleted                 Boolean                   @default(false) @map("is_deleted")
   hasGroupNumber            Boolean                   @default(false) @map("has_group_number")
   accommodationType         AccommodationType?        @map("accommodation_type")
-  visaType                  VisaType                  @default(individual_visa) @map("visa_type")
+  visaType                  VisaType                  @default("individual_visa") @map("visa_type")
   hasTransportation         Boolean                   @default(false) @map("has_transportation")
   voucherGeneratedAt        DateTime?                 @map("voucher_generated_at")
   voucherGeneratedBy        String?                   @map("voucher_generated_by")
@@ -99,17 +99,17 @@ model UmrahVisaBooking {
   hasMultipleGroup          Boolean                   @default(false) @map("has_multiple_group")
   multipleGroupDetails      Json?                     @map("multiple_group_details")
   statusHistory             BookingStatusHistory[]
-  hotelBookings             UmrahHotelBooking[]
-  sponsorIqamaDetails       UmrahSponserIqamaDetails?
-  passengers                UmrahPassenger[]
-  transportBookings         UmrahTransportBooking[]
-  movementDetails           UmrahMovementDetail[]
-  travelDetails             UmrahTravelDetails?
   documents                 Document[]
-  party                     Party                     @relation("BookingParty", fields: [partyId], references: [id], onDelete: Cascade)
-  umrahVisaProvider         Party?                    @relation("UmrahVisaProvider", fields: [umrahVisaProviderId], references: [id])
-  documentsDownloadedByUser User?                     @relation("BookingDocumentsDownloadedBy", fields: [documentsDownloadedBy], references: [id])
+  hotelBookings             UmrahHotelBooking[]
+  movementDetails           UmrahMovementDetail[]
+  passengers                UmrahPassenger[]
+  sponsorIqamaDetails       UmrahSponserIqamaDetails?
+  transportBookings         UmrahTransportBooking[]
+  travelDetails             UmrahTravelDetails?
   lastUpdatedByUser         User?                     @relation("BookingLastUpdatedBy", fields: [lastUpdatedBy], references: [id])
+  documentsDownloadedByUser User?                     @relation("BookingDocumentsDownloadedBy", fields: [documentsDownloadedBy], references: [id])
+  umrahVisaProvider         Party?                    @relation("UmrahVisaProvider", fields: [umrahVisaProviderId], references: [id])
+  party                     Party                     @relation("BookingParty", fields: [partyId], references: [id], onDelete: Cascade)
 
   @@index([partyId])
   @@index([status])
@@ -192,8 +192,8 @@ model BookingStatusHistory {
   changedAt DateTime         @default(now()) @map("changed_at")
   isDeleted Boolean          @default(false) @map("is_deleted")
   deletedAt DateTime?        @map("deleted_at")
-  booking   UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   user      User             @relation(fields: [changedBy], references: [id])
+  booking   UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
   @@index([changedBy])
@@ -274,8 +274,8 @@ model CountryMaster {
   isActive     Boolean          @default(true) @map("is_active")
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at")
-  locations    LocationMaster[]
   cities       CityMaster[]
+  locations    LocationMaster[]
 
   @@index([countryCode])
   @@index([countryName])
@@ -292,13 +292,13 @@ model CityMaster {
   updatedAt              DateTime               @default(now()) @updatedAt @map("updated_at")
   country                CountryMaster          @relation(fields: [countryId], references: [id])
   locations              LocationMaster[]
-  transportRoutesAsCity1 TransportRouteMaster[] @relation("TransportRouteCity1")
-  transportRoutesAsCity2 TransportRouteMaster[] @relation("TransportRouteCity2")
-  transportRoutesAsCity3 TransportRouteMaster[] @relation("TransportRouteCity3")
   transportRoutesAsCity4 TransportRouteMaster[] @relation("TransportRouteCity4")
-  movementDetailsFrom    UmrahMovementDetail[]  @relation("MovementFromCity")
-  movementDetailsTo      UmrahMovementDetail[]  @relation("MovementToCity")
+  transportRoutesAsCity3 TransportRouteMaster[] @relation("TransportRouteCity3")
+  transportRoutesAsCity2 TransportRouteMaster[] @relation("TransportRouteCity2")
+  transportRoutesAsCity1 TransportRouteMaster[] @relation("TransportRouteCity1")
   hotelBookingCities     UmrahHotelBooking[]    @relation("HotelBookingCities")
+  movementDetailsTo      UmrahMovementDetail[]  @relation("MovementToCity")
+  movementDetailsFrom    UmrahMovementDetail[]  @relation("MovementFromCity")
 
   @@unique([name, countryId])
   @@index([name])
@@ -308,24 +308,23 @@ model CityMaster {
 }
 
 model LocationMaster {
-  id           String       @id @default(uuid())
-  code         String       @map("code")
-  name         String       @map("name")
-  locationType LocationType @map("location_type")
-  countryId    String       @map("country_id")
-  cityId       String       @map("city_id")
-  city         String
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at")
-
-  country               CountryMaster         @relation(fields: [countryId], references: [id])
-  cityMaster            CityMaster            @relation(fields: [cityId], references: [id])
-  hotelBookings         UmrahHotelBooking[]   @relation("HotelBookings")
-  arrivalFlights        UmrahTravelDetails[]  @relation("ArrivalAirport")
-  departureFlights      UmrahTravelDetails[]  @relation("DepartureAirport")
-  movementDetailsFrom   UmrahMovementDetail[] @relation("MovementFromLocation")
-  movementDetailsTo     UmrahMovementDetail[] @relation("MovementToLocation")
+  id                  String                @id @default(uuid())
+  code                String                @map("code")
+  name                String                @map("name")
+  locationType        LocationType          @map("location_type")
+  countryId           String                @map("country_id")
+  cityId              String                @map("city_id")
+  city                String
+  isActive            Boolean               @default(true) @map("is_active")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @default(now()) @updatedAt @map("updated_at")
+  cityMaster          CityMaster            @relation(fields: [cityId], references: [id])
+  country             CountryMaster         @relation(fields: [countryId], references: [id])
+  hotelBookings       UmrahHotelBooking[]   @relation("HotelBookings")
+  movementDetailsTo   UmrahMovementDetail[] @relation("MovementToLocation")
+  movementDetailsFrom UmrahMovementDetail[] @relation("MovementFromLocation")
+  departureFlights    UmrahTravelDetails[]  @relation("DepartureAirport")
+  arrivalFlights      UmrahTravelDetails[]  @relation("ArrivalAirport")
 
   @@unique([code, locationType])
   @@index([code])
@@ -363,11 +362,11 @@ model TransportRouteMaster {
   isActive   Boolean           @default(true) @map("is_active")
   createdAt  DateTime          @default(now()) @map("created_at")
   updatedAt  DateTime          @default(now()) @updatedAt @map("updated_at")
-  city1      CityMaster        @relation("TransportRouteCity1", fields: [city1Id], references: [id])
-  city2      CityMaster        @relation("TransportRouteCity2", fields: [city2Id], references: [id])
-  city3      CityMaster?       @relation("TransportRouteCity3", fields: [city3Id], references: [id])
-  city4      CityMaster?       @relation("TransportRouteCity4", fields: [city4Id], references: [id])
   transports TransportMaster[]
+  city4      CityMaster?       @relation("TransportRouteCity4", fields: [city4Id], references: [id])
+  city3      CityMaster?       @relation("TransportRouteCity3", fields: [city3Id], references: [id])
+  city2      CityMaster        @relation("TransportRouteCity2", fields: [city2Id], references: [id])
+  city1      CityMaster        @relation("TransportRouteCity1", fields: [city1Id], references: [id])
 
   @@index([city1Id])
   @@index([city2Id])
@@ -384,8 +383,8 @@ model TransportMaster {
   isActive          Boolean                 @default(true) @map("is_active")
   createdAt         DateTime                @default(now()) @map("created_at")
   updatedAt         DateTime                @default(now()) @updatedAt @map("updated_at")
-  route             TransportRouteMaster    @relation(fields: [routeId], references: [id])
   vehicleType       VehicleTypeMaster       @relation(fields: [vehicleTypeId], references: [id])
+  route             TransportRouteMaster    @relation(fields: [routeId], references: [id])
   transportBookings UmrahTransportBooking[]
 
   @@unique([routeId, vehicleTypeId])
@@ -406,9 +405,9 @@ model UmrahTravelDetails {
   departureFlightNumber String           @map("departure_flight_number")
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @default(now()) @updatedAt @map("updated_at")
-  arrivalAirport        LocationMaster   @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
-  booking               UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   departureAirport      LocationMaster   @relation("DepartureAirport", fields: [departureAirportId], references: [id])
+  booking               UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  arrivalAirport        LocationMaster   @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
 
   @@index([bookingId])
   @@index([arrivalDateTime])
@@ -428,9 +427,9 @@ model UmrahHotelBooking {
   brn          Json?            @map("brn")
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at")
-  booking      UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  hotel        LocationMaster   @relation("HotelBookings", fields: [hotelId], references: [id])
   city         CityMaster       @relation("HotelBookingCities", fields: [cityId], references: [id])
+  hotel        LocationMaster   @relation("HotelBookings", fields: [hotelId], references: [id])
+  booking      UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
   @@index([cityId])
@@ -466,8 +465,8 @@ model UmrahTransportBooking {
   travelDateTime    DateTime?        @map("travel_datetime")
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @default(now()) @updatedAt @map("updated_at")
-  booking           UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   transportMaster   TransportMaster  @relation(fields: [transportMasterId], references: [id])
+  booking           UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
   @@index([transportMasterId])
@@ -476,21 +475,20 @@ model UmrahTransportBooking {
 }
 
 model UmrahMovementDetail {
-  id             String   @id @default(uuid())
-  bookingId      String   @map("booking_id")
-  travelDateTime DateTime @map("travel_datetime")
-  fromCityId     String   @map("from_city_id")
-  fromLocationId String   @map("from_location_id")
-  toCityId       String   @map("to_city_id")
-  toLocationId   String   @map("to_location_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
-
-  booking      UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  fromCity     CityMaster       @relation("MovementFromCity", fields: [fromCityId], references: [id])
-  fromLocation LocationMaster   @relation("MovementFromLocation", fields: [fromLocationId], references: [id])
-  toCity       CityMaster       @relation("MovementToCity", fields: [toCityId], references: [id])
-  toLocation   LocationMaster   @relation("MovementToLocation", fields: [toLocationId], references: [id])
+  id             String           @id @default(uuid())
+  bookingId      String           @map("booking_id")
+  travelDateTime DateTime         @map("travel_datetime")
+  fromCityId     String           @map("from_city_id")
+  fromLocationId String           @map("from_location_id")
+  toCityId       String           @map("to_city_id")
+  toLocationId   String           @map("to_location_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at")
+  toLocation     LocationMaster   @relation("MovementToLocation", fields: [toLocationId], references: [id])
+  toCity         CityMaster       @relation("MovementToCity", fields: [toCityId], references: [id])
+  fromLocation   LocationMaster   @relation("MovementFromLocation", fields: [fromLocationId], references: [id])
+  fromCity       CityMaster       @relation("MovementFromCity", fields: [fromCityId], references: [id])
+  booking        UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
   @@index([travelDateTime])
@@ -502,12 +500,12 @@ model UmrahMovementDetail {
 model PassengerDocument {
   id           String         @id @default(uuid())
   passengerId  String         @map("passenger_id")
-  documentType String           @map("document_type")
+  documentType String         @map("document_type")
   fileName     String         @map("file_name")
   filePath     String         @map("file_path")
   fileSize     Int?
   mimeType     String?        @map("mime_type")
-  uploadedAt   DateTime         @default(now()) @map("uploaded_at")
+  uploadedAt   DateTime       @default(now()) @map("uploaded_at")
   isDeleted    Boolean        @default(false) @map("is_deleted")
   deletedAt    DateTime?      @map("deleted_at")
   passenger    UmrahPassenger @relation(fields: [passengerId], references: [id], onDelete: Cascade)
@@ -519,26 +517,25 @@ model PassengerDocument {
 }
 
 model Voucher {
-  id                  String           @id @default(uuid())
-  voucherNumber       String           @map("voucher_number")
-  reservationDate     DateTime         @map("reservation_date")
-  guestName           String           @map("guest_name")
-  guestMobile         String?          @map("guest_mobile")
-  groupCode           String?          @map("group_code")
-  groupName           String?          @map("group_name")
-  umrahVisaProviderId String?          @map("umrah_visa_provider_id")
-  paxCount            Int              @map("pax_count")
-  version             Int              @default(1)
-  generatedAt         DateTime         @default(now()) @map("generated_at")
-  generatedBy         String           @map("generated_by")
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at")
-  generatedByUser     User             @relation("VoucherGeneratedBy", fields: [generatedBy], references: [id])
-  movements           VoucherMovement[]
-  hotels              VoucherHotel[]
+  id                  String            @id @default(uuid())
+  voucherNumber       String            @unique @map("voucher_number")
+  reservationDate     DateTime          @map("reservation_date")
+  guestName           String            @map("guest_name")
+  guestMobile         String?           @map("guest_mobile")
+  groupCode           String?           @map("group_code")
+  groupName           String?           @map("group_name")
+  umrahVisaProviderId String?           @map("umrah_visa_provider_id")
+  paxCount            Int               @map("pax_count")
+  version             Int               @default(1)
+  generatedAt         DateTime          @default(now()) @map("generated_at")
+  generatedBy         String            @map("generated_by")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at")
   flights             VoucherFlight[]
+  hotels              VoucherHotel[]
+  movements           VoucherMovement[]
+  generatedByUser     User              @relation("VoucherGeneratedBy", fields: [generatedBy], references: [id])
 
-  @@unique([voucherNumber])
   @@index([voucherNumber])
   @@index([generatedAt])
   @@index([generatedBy])
@@ -546,27 +543,27 @@ model Voucher {
 }
 
 model VoucherMovement {
-  id                  String   @id @default(uuid())
-  voucherId           String   @map("voucher_id")
-  sr                  Int
-  route               String?
-  date                DateTime
-  time                String
-  from                String
-  fromLocation        String   @map("from_location")
-  fromLocationId      String?  @map("from_location_id")
-  to                  String
-  toLocation          String   @map("to_location")
-  toLocationId        String?  @map("to_location_id")
-  driverDetails1      String?  @map("driver_details_1")
-  driverDetails2      String?  @map("driver_details_2")
-  vehicleNumber       String?  @map("vehicle_number")
-  paxCount            Int?     @map("pax_count")
-  price               Decimal?
-  vehicleType         String?  @map("vehicle_type")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-  voucher             Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  voucherId      String   @map("voucher_id")
+  sr             Int
+  route          String?
+  date           DateTime
+  time           String
+  from           String
+  fromLocation   String   @map("from_location")
+  fromLocationId String?  @map("from_location_id")
+  to             String
+  toLocation     String   @map("to_location")
+  toLocationId   String?  @map("to_location_id")
+  driverDetails1 String?  @map("driver_details_1")
+  driverDetails2 String?  @map("driver_details_2")
+  vehicleNumber  String?  @map("vehicle_number")
+  paxCount       Int?     @map("pax_count")
+  price          Decimal?
+  vehicleType    String?  @map("vehicle_type")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  voucher        Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@index([voucherId])
   @@index([date])
@@ -576,18 +573,18 @@ model VoucherMovement {
 }
 
 model VoucherHotel {
-  id                  String   @id @default(uuid())
-  voucherId           String   @map("voucher_id")
-  number              Int
-  location            String
-  hotelName           String   @map("hotel_name")
-  checkIn             DateTime @map("check_in")
-  checkOut            DateTime @map("check_out")
-  days                Int
-  brn                 String?
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-  voucher             Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  voucherId String   @map("voucher_id")
+  number    Int
+  location  String
+  hotelName String   @map("hotel_name")
+  checkIn   DateTime @map("check_in")
+  checkOut  DateTime @map("check_out")
+  days      Int
+  brn       String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@index([voucherId])
   @@index([checkIn])
@@ -596,24 +593,86 @@ model VoucherHotel {
 }
 
 model VoucherFlight {
-  id                  String   @id @default(uuid())
-  voucherId           String   @map("voucher_id")
-  type                String
-  carrier             String
-  number              String
-  date                DateTime
-  from                String
-  to                  String
-  etd                 String?
-  eta                 String?
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-  voucher             Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  voucherId String   @map("voucher_id")
+  type      String
+  carrier   String
+  number    String
+  date      DateTime
+  from      String
+  to        String
+  etd       String?
+  eta       String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@index([voucherId])
   @@index([date])
   @@index([type])
   @@map("voucher_flights")
+}
+
+model PartyContact {
+  id            String   @id @default(uuid())
+  partyId       String   @map("party_id")
+  contactName   String   @map("contact_name")
+  contactNumber String   @map("contact_number")
+  department    String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  party         Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@map("party_contacts")
+}
+
+model PartyDocument {
+  id           String            @id @default(uuid())
+  partyId      String            @map("party_id")
+  documentType PartyDocumentType @map("document_type")
+  fileName     String            @map("file_name")
+  filePath     String            @map("file_path")
+  fileSize     Int?              @map("file_size")
+  mimeType     String?           @map("mime_type")
+  uploadedAt   DateTime          @default(now()) @map("uploaded_at")
+  isDeleted    Boolean           @default(false) @map("is_deleted")
+  deletedAt    DateTime?         @map("deleted_at")
+  party        Party             @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@index([documentType])
+  @@index([isDeleted])
+  @@map("party_documents")
+}
+
+model PricingMaster {
+  id        String      @id @default(uuid())
+  partyId   String      @map("party_id")
+  cost      Decimal
+  price     Decimal
+  type      PricingType
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @default(now()) @updatedAt @map("updated_at")
+  party     Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
+  @@index([type])
+  @@index([isActive])
+  @@map("pricing_masters")
+}
+
+model UmrahVisaMaster {
+  id                String   @id @default(uuid())
+  lastArrivalDate   DateTime @map("last_arrival_date")
+  lastDepartureDate DateTime @map("last_departure_date")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("umrah_visa_masters")
 }
 
 enum UserRole {
@@ -665,39 +724,6 @@ enum LocationType {
   OTHERS
 }
 
-model PartyContact {
-  id            String   @id @default(uuid())
-  partyId       String   @map("party_id")
-  contactName   String   @map("contact_name")
-  contactNumber String   @map("contact_number")
-  department    String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
-  party         Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
-
-  @@index([partyId])
-  @@map("party_contacts")
-}
-
-model PartyDocument {
-  id           String            @id @default(uuid())
-  partyId      String            @map("party_id")
-  documentType PartyDocumentType @map("document_type")
-  fileName     String            @map("file_name")
-  filePath     String            @map("file_path")
-  fileSize     Int?              @map("file_size")
-  mimeType     String?           @map("mime_type")
-  uploadedAt   DateTime          @default(now()) @map("uploaded_at")
-  isDeleted    Boolean           @default(false) @map("is_deleted")
-  deletedAt    DateTime?         @map("deleted_at")
-  party        Party             @relation(fields: [partyId], references: [id], onDelete: Cascade)
-
-  @@index([partyId])
-  @@index([documentType])
-  @@index([isDeleted])
-  @@map("party_documents")
-}
-
 enum PartyDocumentType {
   gst_certificate
   pan_card
@@ -716,33 +742,4 @@ enum RouteType {
 enum PricingType {
   umrah
   others
-}
-
-model PricingMaster {
-  id        String      @id @default(uuid())
-  partyId   String      @map("party_id")
-  cost      Decimal
-  price     Decimal
-  type      PricingType
-  isActive  Boolean     @default(true) @map("is_active")
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @default(now()) @updatedAt @map("updated_at")
-  party     Party       @relation(fields: [partyId], references: [id], onDelete: Cascade)
-
-  @@index([partyId])
-  @@index([type])
-  @@index([isActive])
-  @@map("pricing_masters")
-}
-
-model UmrahVisaMaster {
-  id                String   @id @default(uuid())
-  lastArrivalDate   DateTime @map("last_arrival_date")
-  lastDepartureDate DateTime @map("last_departure_date")
-  isActive          Boolean  @default(true) @map("is_active")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@index([isActive])
-  @@map("umrah_visa_masters")
 }

@@ -270,6 +270,8 @@ export const umrahVisaAPI = {
   fetchFromSheet: () => api.post('/umrah-visa/invoice/fetch-from-sheet'),
   
   generateBills: (bookingIds: string[]) => api.post('/umrah-visa/invoice/generate-bills', { bookingIds }),
+  
+  generateBill: (bookingId: string) => api.post(`/umrah-visa/${bookingId}/generate-bill`, {}, { responseType: 'blob' }),
 
   addToExistingBooking: (data: FormData) => 
     api.post('/umrah-visa/group/add-to-existing-booking', data, {

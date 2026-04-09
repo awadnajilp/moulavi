@@ -1329,10 +1329,9 @@ router.get('/:bookingId/available-actions', authenticate, async (req, res) => {
           availableActions.push({
             action: 'generate_bill',
             label: 'Generate Bill',
-            description: 'Generate bill for this booking (functionality coming soon)',
+            description: 'Generate bill for this booking',
             endpoint: `/api/umrah-visa/${bookingId}/generate-bill`,
             method: 'POST',
-            disabled: true,
           });
         }
         break;

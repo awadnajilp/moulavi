@@ -425,4 +425,115 @@ router.post('/invoice/generate-bills', authenticate, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/umrah-visa/:bookingId/generate-bill
+ * Generate a single bill for a booking
+ */
+router.post('/:bookingId/generate-bill', authenticate, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const user = (req as any).user;
+
+    // Only admin/staff can generate bills
+    if (user.role === 'party') {
+      return res.status(403).json({ error: 'Only admin/staff can generate bills' });
+    }
+
+    // Fetch booking with party and passengers
+    const booking = await prisma.umrahVisaBooking.findUnique({
+      where: { id: bookingId, isDeleted: false },
+      include: {
+        party: true,
+        passengers: {
+          where: { isDeleted: false },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            fullName: true,
+            visaNumber: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Validate PricingMaster entry exists
+    const pricing = await prisma.pricingMaster.findFirst({
+      where: {
+        partyId: booking.partyId,
+        type: 'umrah',
+        isActive: true,
+      },
+    });
+
+    if (!pricing) {
+      return res.status(400).json({ error: `Party "${booking.party.partyName}" does not have an entry in the pricing master` });
+    }
+
+    // Prepare passenger data
+    const passengers = booking.passengers.map((p) => ({
+      name: p.fullName,
+      visaNumber: p.visaNumber || 'N/A',
+    }));
+
+    // Calculate amount (price per passenger * passenger count)
+    const pricePerPassenger = Number(pricing.price);
+    const totalAmount = pricePerPassenger * booking.passengerCount;
+
+    // Generate PDF
+    const billData: BillPdfData = {
+      partyName: booking.party.partyName,
+      groupNumber: booking.groupNumber || 'N/A',
+      groupName: booking.groupName || 'N/A',
+      passengerCount: booking.passengerCount,
+      passengers,
+      amount: totalAmount,
+    };
+
+    const pdfBuffer = await generateBillPDF(billData);
+
+    // Send email
+    if (booking.party.email) {
+      try {
+        await sendBillEmail(
+          booking.party.email,
+          booking.party.partyName,
+          booking.groupNumber || 'N/A',
+          booking.groupName || 'N/A',
+          pdfBuffer
+        );
+      } catch (emailError: any) {
+        console.error(`Failed to send email for booking ${bookingId}:`, emailError);
+        // Continue even if email fails
+      }
+    }
+
+    // Update booking status to completed
+    await prisma.umrahVisaBooking.update({
+      where: { id: bookingId },
+      data: {
+        status: 'booking_success',
+        billGeneratedAt: new Date(),
+        billGeneratedBy: user.id,
+      },
+    });
+
+    // Send PDF
+    const fileName = `Bill_${booking.groupNumber || bookingId}_${(booking.groupName || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', pdfBuffer.length.toString());
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error(`Error generating bill for booking ${req.params.bookingId}:`, error);
+    res.status(500).json({
+      error: 'Failed to generate bill',
+      message: error.message,
+    });
+  }
+});
+
 export default router;
