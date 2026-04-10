@@ -422,22 +422,27 @@ export function VoucherPreviewDialog({
 
   // Helper function to format route display
   const formatRouteDisplay = (route: any): string => {
-    if (!route) return 'No route';
+    if (!route || Object.keys(route).length === 0) return 'No route';
+    
     const cities = [
-      route.city1?.name,
-      route.city2?.name,
-      route.city3?.name,
-      route.city4?.name,
+      route.city1?.name || (route.city1Id ? 'City 1' : null),
+      route.city2?.name || (route.city2Id ? 'City 2' : null),
+      route.city3?.name || (route.city3Id ? 'City 3' : null),
+      route.city4?.name || (route.city4Id ? 'City 4' : null),
     ].filter(Boolean);
+    
+    if (cities.length === 0) return `Route (${route.routeType || 'Custom'})`;
+    
     const routeString = cities.join(' → ');
     const routeTypeLabel = route.routeType
       ? route.routeType
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .split(' ')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .split(' ')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ')
-      : 'Unknown';
-    return `${routeString} (${routeTypeLabel})`;
+      : '';
+      
+    return routeTypeLabel ? `${routeString} (${routeTypeLabel})` : routeString;
   };
 
   const handleTransportQuantityChange = (transportId: string, delta: number) => {

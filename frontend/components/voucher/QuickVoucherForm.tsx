@@ -151,7 +151,11 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
           }
           hotelsByCityMap.get(cityKey)!.push(loc);
         } else if (loc.locationType === 'AIRPORT') {
-          airportsList.push(loc);
+          airportsList.push({
+            ...loc,
+            airportCode: loc.code,
+            airportName: loc.name
+          });
         } else if (loc.locationType === 'ZIYARAT') {
           ziyarathsList.push(loc);
         }
@@ -303,12 +307,16 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
 
   // Format route display
   const formatRouteDisplay = (route: any): string => {
+    if (!route) return 'No Route';
+    
     const cities = [
-      route.city1?.name,
-      route.city2?.name,
-      route.city3?.name,
-      route.city4?.name,
+      route.city1?.name || (route.city1Id ? 'City 1' : null),
+      route.city2?.name || (route.city2Id ? 'City 2' : null),
+      route.city3?.name || (route.city3Id ? 'City 3' : null),
+      route.city4?.name || (route.city4Id ? 'City 4' : null),
     ].filter(Boolean);
+    
+    if (cities.length === 0) return `Route (${route.routeType || 'Custom'})`;
     return cities.join(' → ');
   };
 
@@ -1100,12 +1108,12 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
                             <div className="flex items-center gap-1">
                               <Select value={flight.fromLocationId} onValueChange={(v) => updateFlightDetail(idx, 'fromLocationId', v)}>
                                 <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] w-20"><SelectValue placeholder="From" /></SelectTrigger>
-                                <SelectContent>{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px]">{a.airportCode}</SelectItem>)}</SelectContent>
+                                <SelectContent className="max-h-[300px]">{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[10px]">{a.airportCode || a.code || a.name}</SelectItem>)}</SelectContent>
                               </Select>
                               <span className="text-muted-foreground text-[9px]">→</span>
                               <Select value={flight.toLocationId} onValueChange={(v) => updateFlightDetail(idx, 'toLocationId', v)}>
                                 <SelectTrigger className="h-7 rounded border-gray-100 text-[9px] w-20"><SelectValue placeholder="To" /></SelectTrigger>
-                                <SelectContent>{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[9px]">{a.airportCode}</SelectItem>)}</SelectContent>
+                                <SelectContent className="max-h-[300px]">{airports.map(a => <SelectItem key={a.id} value={a.id} className="text-[10px]">{a.airportCode || a.code || a.name}</SelectItem>)}</SelectContent>
                               </Select>
                             </div>
                           </TableCell>
@@ -1226,8 +1234,16 @@ export function QuickVoucherForm({ onSuccess }: QuickVoucherFormProps) {
               <div className="space-y-1">
                 <Label className="text-[9px] font-bold text-muted-foreground uppercase ml-0.5">Select Route</Label>
                 <Select value={selectedRouteId || ''} onValueChange={(v) => { setSelectedRouteId(v); setFormData({...formData, transportOptions: []}); }}>
-                  <SelectTrigger className="h-8 rounded-lg text-[10px] font-bold overflow-hidden"><SelectValue placeholder="Target Sector" /></SelectTrigger>
-                  <SelectContent className="max-w-[250px]">{filteredRoutes.map(r => <SelectItem key={r.id} value={r.id} className="text-[9px] leading-tight">{formatRouteDisplay(r)}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-8 rounded-lg text-[10px] font-bold w-full overflow-hidden truncate">
+                    <SelectValue placeholder="Target Sector" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[300px]">
+                    {filteredRoutes.map(r => (
+                      <SelectItem key={r.id} value={r.id} className="text-[10px] leading-tight py-2">
+                        {formatRouteDisplay(r)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 

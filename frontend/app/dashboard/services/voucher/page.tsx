@@ -21,12 +21,12 @@ import {
   Download,
   Ticket,
   Calendar,
-  Users,
   TrendingUp,
   X,
   Filter,
-  ChevronDown,
-  ChevronUp,
+  ArrowRight,
+  Loader2,
+  Save,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -37,7 +37,8 @@ import { voucherAPI } from '@/lib/api';
 import api from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { QuickVoucherForm } from '@/components/voucher/QuickVoucherForm';
-import { Loader2, Save } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 interface Voucher {
   id: string;
@@ -99,7 +100,11 @@ interface Stats {
 export default function VoucherServicePage() {
   const router = useRouter();
   const user = getUser();
-  const [activeTab, setActiveTab] = useState<'all' | 'quick' | 'today' | 'tomorrow'>('all');
+  
+  // Tab States
+  const [activeMainTab, setActiveMainTab] = useState<'vouchers' | 'movements'>('vouchers');
+  const [activeVoucherSubTab, setActiveVoucherSubTab] = useState<'all' | 'quick'>('all');
+  const [activeMovementSubTab, setActiveMovementSubTab] = useState<'today' | 'tomorrow'>('today');
   
   // Stats
   const [stats, setStats] = useState<Stats>({
@@ -109,7 +114,7 @@ export default function VoucherServicePage() {
   });
   const [loadingStats, setLoadingStats] = useState(true);
   
-  // All Vouchers
+  // Data States
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loadingVouchers, setLoadingVouchers] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,36 +125,51 @@ export default function VoucherServicePage() {
     totalPages: 0,
   });
   
-  // Movements
   const [todayMovements, setTodayMovements] = useState<Movement[]>([]);
   const [tomorrowMovements, setTomorrowMovements] = useState<Movement[]>([]);
   const [loadingMovements, setLoadingMovements] = useState(false);
   
-  // Master Data
-  const [cities, setCities] = useState<any[]>([]);
-  const [locations, setLocations] = useState<any[]>([]);
-  const [locationsByCity, setLocationsByCity] = useState<Map<string, any[]>>(new Map());
-  
-  // Editing states
+  // Editing & Action States
   const [editingMovements, setEditingMovements] = useState<Map<string, Movement>>(new Map());
   const [savingMovementId, setSavingMovementId] = useState<string | null>(null);
   const [downloadingVoucherId, setDownloadingVoucherId] = useState<string | null>(null);
 
-  // Filter options and active filters
+  // Filter States
   const [availableFromOptions, setAvailableFromOptions] = useState<string[]>([]);
   const [availableToOptions, setAvailableToOptions] = useState<string[]>([]);
   const [selectedFrom, setSelectedFrom] = useState<string | null>(null);
   const [selectedTo, setSelectedTo] = useState<string | null>(null);
-  const [showTodayFilters, setShowTodayFilters] = useState(false);
-  const [showTomorrowFilters, setShowTomorrowFilters] = useState(false);
-  const [todayRouteSearch, setTodayRouteSearch] = useState('');
-  const [tomorrowRouteSearch, setTomorrowRouteSearch] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [movementSearch, setMovementSearch] = useState('');
 
-  // Movement Stats
+  // Movement Summary Stats
   const [todayStats, setTodayStats] = useState<Array<{from: string, to: string, count: number}>>([]);
   const [tomorrowStats, setTomorrowStats] = useState<Array<{from: string, to: string, count: number}>>([]);
   const [loadingMovementStats, setLoadingMovementStats] = useState(false);
 
+  // Initial Load
+  useEffect(() => {
+    if (!user || !hasRole(['admin', 'staff'])) {
+      router.push('/');
+      return;
+    }
+    loadStats();
+    loadFilterOptions();
+    loadTodayStats();
+    loadTomorrowStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync data with active tabs
+  useEffect(() => {
+    if (activeMainTab === 'vouchers' && activeVoucherSubTab === 'all') {
+      loadVouchers();
+    } else if (activeMainTab === 'movements') {
+      if (activeMovementSubTab === 'today') loadTodayMovements();
+      else loadTomorrowMovements();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMainTab, activeVoucherSubTab, activeMovementSubTab, searchTerm, pagination.page, selectedFrom, selectedTo]);
 
   const loadStats = async () => {
     try {
@@ -158,7 +178,6 @@ export default function VoucherServicePage() {
       setStats(response.data);
     } catch (error) {
       console.error('Error loading stats:', error);
-      toast.error('Failed to load statistics');
     } finally {
       setLoadingStats(false);
     }
@@ -173,21 +192,9 @@ export default function VoucherServicePage() {
         search: searchTerm,
       });
       setVouchers(response.data.vouchers);
-      // Only update if pagination values actually changed
-      const newPagination = response.data.pagination;
-      setPagination(prev => {
-        // Compare values to avoid unnecessary updates
-        if (prev.page === newPagination.page && 
-            prev.total === newPagination.total && 
-            prev.totalPages === newPagination.totalPages &&
-            prev.limit === newPagination.limit) {
-          return prev; // Return same reference to prevent re-render
-        }
-        return newPagination;
-      });
+      setPagination(response.data.pagination);
     } catch (error) {
       console.error('Error loading vouchers:', error);
-      toast.error('Failed to load vouchers');
     } finally {
       setLoadingVouchers(false);
     }
@@ -200,7 +207,6 @@ export default function VoucherServicePage() {
       setAvailableToOptions(response.data.toOptions || []);
     } catch (error) {
       console.error('Error loading filter options:', error);
-      toast.error('Failed to load filter options');
     }
   };
 
@@ -213,7 +219,6 @@ export default function VoucherServicePage() {
       setTodayMovements(response.data.movements);
     } catch (error) {
       console.error('Error loading today movements:', error);
-      toast.error('Failed to load today movements');
     } finally {
       setLoadingMovements(false);
     }
@@ -228,7 +233,6 @@ export default function VoucherServicePage() {
       setTomorrowMovements(response.data.movements);
     } catch (error) {
       console.error('Error loading tomorrow movements:', error);
-      toast.error('Failed to load tomorrow movements');
     } finally {
       setLoadingMovements(false);
     }
@@ -241,7 +245,6 @@ export default function VoucherServicePage() {
       setTodayStats(response.data.stats || []);
     } catch (error) {
       console.error('Error loading today stats:', error);
-      toast.error('Failed to load today statistics');
     } finally {
       setLoadingMovementStats(false);
     }
@@ -254,82 +257,75 @@ export default function VoucherServicePage() {
       setTomorrowStats(response.data.stats || []);
     } catch (error) {
       console.error('Error loading tomorrow stats:', error);
-      toast.error('Failed to load tomorrow statistics');
     } finally {
       setLoadingMovementStats(false);
     }
   };
 
-  // Update movement field in editing state
   const updateMovementField = (movementId: string, field: string, value: any) => {
     setEditingMovements(prev => {
       const updated = new Map(prev);
       const current = updated.get(movementId) || 
-                     todayMovements.find(m => (m.movementId || `${m.voucherId}-${m.movementIndex}`) === movementId) || 
-                     tomorrowMovements.find(m => (m.movementId || `${m.voucherId}-${m.movementIndex}`) === movementId);
-      if (current) {
-        updated.set(movementId, { ...current, [field]: value });
-      } else {
-        // If not found, try to get from current movements
-        const allMovements = [...todayMovements, ...tomorrowMovements];
-        const found = allMovements.find(m => (m.movementId || `${m.voucherId}-${m.movementIndex}`) === movementId);
-        if (found) {
-          updated.set(movementId, { ...found, [field]: value });
-        }
-      }
+                     [...todayMovements, ...tomorrowMovements].find(m => (m.movementId || `${m.voucherId}-${m.movementIndex}`) === movementId);
+      if (current) updated.set(movementId, { ...current, [field]: value });
       return updated;
     });
   };
 
-  // Download voucher PDF
+  const saveMovement = async (movement: Movement) => {
+    const movementId = movement.movementId || `${movement.voucherId}-${movement.movementIndex}`;
+    const editedMovement = editingMovements.get(movementId) || movement;
+    try {
+      setSavingMovementId(movementId);
+      await voucherAPI.updateMovementDetails(movement.voucherId, movement.movementIndex, {
+        driverDetails1: editedMovement.driverDetails1,
+        driverDetails2: editedMovement.driverDetails2,
+        vehicleNumber: editedMovement.vehicleNumber,
+      });
+      toast.success('Movement updated');
+      setEditingMovements(prev => {
+        const updated = new Map(prev);
+        updated.delete(movementId);
+        return updated;
+      });
+      if (activeMovementSubTab === 'today') loadTodayMovements();
+      else loadTomorrowMovements();
+      loadStats();
+    } catch (error: any) {
+      toast.error('Failed to update movement');
+    } finally {
+      setSavingMovementId(null);
+    }
+  };
+
   const downloadVoucherPDF = async (voucherId: string) => {
     try {
       setDownloadingVoucherId(voucherId);
-      
-      // Fetch voucher data
       const response = await voucherAPI.getVoucherById(voucherId);
       const voucher = response.data.voucher;
       
-      // Format data for PDF generation (same format as VoucherPreviewDialog)
       const pdfData = {
         voucherNumber: voucher.voucherNumber,
-        reservationNumber: voucher.voucherNumber, // Use voucherNumber as reservation number
-        reservationDate: voucher.reservationDate ? (typeof voucher.reservationDate === 'string' 
-          ? voucher.reservationDate.split('T')[0] 
-          : new Date(voucher.reservationDate).toISOString().split('T')[0]) : '',
+        reservationNumber: voucher.voucherNumber,
+        reservationDate: voucher.reservationDate ? (typeof voucher.reservationDate === 'string' ? voucher.reservationDate.split('T')[0] : new Date(voucher.reservationDate).toISOString().split('T')[0]) : '',
         guestName: voucher.guestName || '',
         guestMobile: voucher.guestMobile || '',
         groupCode: voucher.groupCode || '',
         paxCount: voucher.paxCount || 0,
-        umrahVisaProvider: voucher.booking?.party ? {
-          partyName: voucher.booking.party.partyName || '',
-          address: voucher.booking.party.address || '',
-          city: voucher.booking.party.city || '',
-          state: voucher.booking.party.state || '',
-          country: voucher.booking.party.country || '',
-          contactNumber: voucher.booking.party.contactNumber || '',
-          whatsappNumber: voucher.booking.party.whatsappNumber || '',
-          email: voucher.booking.party.email || '',
-        } : null, // Will be null if not available - PDF service handles this
+        umrahVisaProvider: voucher.booking?.party || null,
         hotelSchedules: (voucher.hotelSchedules || []).map((hs: any) => ({
           number: hs.number || 0,
-          location: hs.location || '', // City name
-          hotelName: hs.hotelName || '', // Hotel name
-          checkIn: hs.checkIn ? (typeof hs.checkIn === 'string' 
-            ? hs.checkIn.split('T')[0] 
-            : new Date(hs.checkIn).toISOString().split('T')[0]) : '',
-          checkOut: hs.checkOut ? (typeof hs.checkOut === 'string' 
-            ? hs.checkOut.split('T')[0] 
-            : new Date(hs.checkOut).toISOString().split('T')[0]) : '',
+          location: hs.location || '',
+          hotelName: hs.hotelName || '',
+          checkIn: hs.checkIn ? (typeof hs.checkIn === 'string' ? hs.checkIn.split('T')[0] : new Date(hs.checkIn).toISOString().split('T')[0]) : '',
+          checkOut: hs.checkOut ? (typeof hs.checkOut === 'string' ? hs.checkOut.split('T')[0] : new Date(hs.checkOut).toISOString().split('T')[0]) : '',
           days: hs.days || 0,
           brn: hs.brn || null,
         })),
         movementDetails: (voucher.movementDetails || []).map((md: any) => ({
           sr: md.sr || 0,
           route: md.route || '',
-          date: md.date ? (typeof md.date === 'string' 
-            ? md.date.split('T')[0] 
-            : new Date(md.date).toISOString().split('T')[0]) : '',
+          date: md.date ? (typeof md.date === 'string' ? md.date.split('T')[0] : new Date(md.date).toISOString().split('T')[0]) : '',
           time: md.time || '',
           from: md.from || '',
           fromLocation: md.fromLocation || '',
@@ -340,11 +336,7 @@ export default function VoucherServicePage() {
           type: fd.type || 'AA',
           carrier: fd.carrier || '',
           number: fd.number || '',
-          date: fd.date ? (typeof fd.date === 'string' 
-            ? fd.date.split('T')[0] 
-            : new Date(fd.date).toISOString().split('T')[0]) : '',
-          arrivalAirport: fd.type === 'AA' ? (fd.from || '') : undefined,
-          departureAirport: fd.type === 'AD' ? (fd.to || '') : undefined,
+          date: fd.date ? (typeof fd.date === 'string' ? fd.date.split('T')[0] : new Date(fd.date).toISOString().split('T')[0]) : '',
           from: fd.from || '',
           to: fd.to || '',
           etd: fd.etd || '',
@@ -352,960 +344,243 @@ export default function VoucherServicePage() {
         })),
       };
 
-      // Call backend to generate PDF
-      const pdfResponse = await api.post('/umrah-visa/generate-pdf', pdfData, {
-        responseType: 'blob',
-      });
-
-      // Create blob and download
+      const pdfResponse = await api.post('/umrah-visa/generate-pdf', pdfData, { responseType: 'blob' });
       const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Voucher_${pdfData.voucherNumber}_${pdfData.guestName
-        .replace(/\s+/g, '_')
-        .slice(0, 20)}.pdf`;
+      link.download = `Voucher_${pdfData.voucherNumber}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Voucher PDF downloaded successfully');
+      toast.success('Voucher PDF downloaded');
     } catch (error: any) {
-      console.error('Error downloading voucher PDF:', error);
-      toast.error(error?.response?.data?.error || 'Failed to download voucher PDF');
+      toast.error('Failed to download PDF');
     } finally {
       setDownloadingVoucherId(null);
     }
   };
 
-  // Save movement changes
-  const saveMovement = async (movement: Movement) => {
-    const movementId = movement.movementId || `${movement.voucherId}-${movement.movementIndex}`;
-    const editedMovement = editingMovements.get(movementId) || movement;
-    
-    try {
-      setSavingMovementId(movementId);
-      await voucherAPI.updateMovementDetails(movement.voucherId, movement.movementIndex, {
-        driverDetails1: editedMovement.driverDetails1,
-        driverDetails2: editedMovement.driverDetails2,
-        vehicleNumber: editedMovement.vehicleNumber,
-      });
-      
-      toast.success('Movement updated successfully');
-      
-      // Remove from editing state
-      setEditingMovements(prev => {
-        const updated = new Map(prev);
-        updated.delete(movementId);
-        return updated;
-      });
-      
-      // Reload movements
-      if (activeTab === 'today') {
-        loadTodayMovements();
-      } else if (activeTab === 'tomorrow') {
-        loadTomorrowMovements();
-      }
-      loadStats();
-    } catch (error: any) {
-      console.error('Error saving movement:', error);
-      toast.error(error?.response?.data?.error || 'Failed to update movement');
-    } finally {
-      setSavingMovementId(null);
-    }
-  };
-
-  // Load stats on mount
-  useEffect(() => {
-    if (!user || !hasRole(['admin', 'staff'])) {
-      router.push('/');
-      return;
-    }
-    loadStats();
-    loadFilterOptions();
-    loadTodayStats();
-    loadTomorrowStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Load vouchers when search term or page changes (only for 'all' tab)
-  useEffect(() => {
-    if (activeTab === 'all') {
-      loadVouchers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, pagination.page, activeTab]);
-
-  // Load movements when tab changes
-  useEffect(() => {
-    if (activeTab === 'today') {
-      loadTodayMovements();
-      loadTodayStats();
-    } else if (activeTab === 'tomorrow') {
-      loadTomorrowMovements();
-      loadTomorrowStats();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  // Reload movements when filters change
-  useEffect(() => {
-    if (activeTab === 'today') {
-      loadTodayMovements();
-    } else if (activeTab === 'tomorrow') {
-      loadTomorrowMovements();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFrom, selectedTo]);
-
-  if (!user || !hasRole(['admin', 'staff'])) {
-    return null;
-  }
-
-  const filteredVouchers = vouchers.filter(voucher => {
+  const filteredVouchers = vouchers.filter(v => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return (
-      voucher.voucherNumber.toLowerCase().includes(term) ||
-      voucher.guestName.toLowerCase().includes(term) ||
-      voucher.guestMobile?.toLowerCase().includes(term) ||
-      voucher.groupCode?.toLowerCase().includes(term)
-    );
+    return v.voucherNumber.toLowerCase().includes(term) ||
+           v.guestName.toLowerCase().includes(term) ||
+           v.groupCode?.toLowerCase().includes(term);
   });
 
+  const currentMovements = activeMovementSubTab === 'today' ? todayMovements : tomorrowMovements;
+  const filteredMovements = currentMovements.filter(m => {
+    if (!movementSearch.trim()) return true;
+    return m.routeNumber.toLowerCase().includes(movementSearch.toLowerCase()) ||
+           m.guestName.toLowerCase().includes(movementSearch.toLowerCase()) ||
+           m.voucherNumber.toLowerCase().includes(movementSearch.toLowerCase());
+  });
+
+  const currentMoveStats = activeMovementSubTab === 'today' ? todayStats : tomorrowStats;
+
+  if (!user || !hasRole(['admin', 'staff'])) return null;
+
   return (
-    <div className="flex-1 flex flex-col bg-gray-50/50">
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Header Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Voucher Management</h1>
-                <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
-                  Manage vouchers and movement details
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  loadStats();
-                  if (activeTab === 'all') loadVouchers();
-                  else if (activeTab === 'today') loadTodayMovements();
-                  else if (activeTab === 'tomorrow') loadTomorrowMovements();
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+    <div className="flex-1 flex flex-col bg-gray-50/50 min-h-screen">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">Voucher Management</h1>
+            <p className="text-xs lg:text-sm text-gray-500 font-medium">Daily movements and transport voucher control</p>
           </div>
-        </div>
-
-        <div className="p-4 lg:p-8 space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
-            <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Vouchers</CardTitle>
-                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Ticket className="h-5 w-5 text-blue-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loadingStats ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <div className="text-3xl font-bold text-gray-900">{stats.totalVouchers}</div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Today Movements</CardTitle>
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {loadingStats ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                  <div className="text-3xl font-bold text-gray-900">{stats.todayMovements}</div>
-                    {loadingMovementStats ? (
-                      <div className="space-y-1 mt-3">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-full" />
-                      </div>
-                    ) : todayStats.length > 0 ? (
-                      <div className="mt-3 space-y-1.5">
-                        <div className="text-xs font-medium text-gray-500 mb-2">Routes:</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {todayStats.map((stat, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setActiveTab('today');
-                                setSelectedFrom(stat.from);
-                                setSelectedTo(stat.to);
-                                setShowTodayFilters(true);
-                              }}
-                              className="text-xs px-2 py-1 bg-gray-100 hover:bg-green-100 rounded border border-gray-200 hover:border-green-300 transition-colors cursor-pointer flex items-center gap-1"
-                              title={`Click to filter: ${stat.from} → ${stat.to}`}
-                            >
-                              <span className="font-medium text-gray-700">{stat.from}</span>
-                              <span className="text-gray-400">→</span>
-                              <span className="font-medium text-gray-700">{stat.to}</span>
-                              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                                {stat.count}
-                              </Badge>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 mt-2">No routes available</p>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-yellow-500 hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">Tomorrow Movements</CardTitle>
-                <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-yellow-600" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {loadingStats ? (
-                  <Skeleton className="h-8 w-20" />
-                ) : (
-                  <>
-                  <div className="text-3xl font-bold text-gray-900">{stats.tomorrowMovements}</div>
-                    {loadingMovementStats ? (
-                      <div className="space-y-1 mt-3">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-full" />
-                      </div>
-                    ) : tomorrowStats.length > 0 ? (
-                      <div className="mt-3 space-y-1.5">
-                        <div className="text-xs font-medium text-gray-500 mb-2">Routes:</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {tomorrowStats.map((stat, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                setActiveTab('tomorrow');
-                                setSelectedFrom(stat.from);
-                                setSelectedTo(stat.to);
-                                setShowTomorrowFilters(true);
-                              }}
-                              className="text-xs px-2 py-1 bg-gray-100 hover:bg-yellow-100 rounded border border-gray-200 hover:border-yellow-300 transition-colors cursor-pointer flex items-center gap-1"
-                              title={`Click to filter: ${stat.from} → ${stat.to}`}
-                            >
-                              <span className="font-medium text-gray-700">{stat.from}</span>
-                              <span className="text-gray-400">→</span>
-                              <span className="font-medium text-gray-700">{stat.to}</span>
-                              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                                {stat.count}
-                              </Badge>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-400 mt-2">No routes available</p>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tabs */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab('all')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'all'
-                        ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    All Vouchers
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('quick')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'quick'
-                        ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Quick Voucher
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('today')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'today'
-                        ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Today Movement
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('tomorrow')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      activeTab === 'tomorrow'
-                        ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Tomorrow Movement
-                  </button>
-                </nav>
-              </div>
-
-              {/* Tab Content */}
-              <div className="mt-6">
-                {activeTab === 'all' && (
-                  <div className="space-y-4">
-                    {/* Search */}
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <Input
-                        placeholder="Search by voucher number, guest name, mobile, or group code..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-
-                    {/* Table */}
-                    {loadingVouchers ? (
-                      <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                          <Skeleton key={i} className="h-16 w-full" />
-                        ))}
-                      </div>
-                    ) : filteredVouchers.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Ticket className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No vouchers found</h3>
-                        <p className="text-gray-500">
-                          {searchTerm ? 'Try adjusting your search criteria.' : 'No vouchers have been created yet.'}
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="rounded-md border overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Reservation Number</TableHead>
-                                <TableHead>Group Number</TableHead>
-                                <TableHead>Guest Name</TableHead>
-                                <TableHead>Guest Number</TableHead>
-                                <TableHead>No of Passengers</TableHead>
-                                <TableHead>Created By</TableHead>
-                                <TableHead>Created Date</TableHead>
-                                <TableHead>Action</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredVouchers.map((voucher) => (
-                                <TableRow key={voucher.id}>
-                                  <TableCell className="font-medium">{voucher.voucherNumber}</TableCell>
-                                  <TableCell>{voucher.groupCode || 'N/A'}</TableCell>
-                                  <TableCell>{voucher.guestName}</TableCell>
-                                  <TableCell>{voucher.guestMobile || 'N/A'}</TableCell>
-                                  <TableCell>{voucher.paxCount}</TableCell>
-                                  <TableCell>{voucher.generatedByUser.name}</TableCell>
-                                  <TableCell>
-                                    {new Date(voucher.createdAt).toLocaleDateString()}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center space-x-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          router.push(`/dashboard/services/voucher/view/${voucher.id}`);
-                                        }}
-                                        title="View Voucher"
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => downloadVoucherPDF(voucher.id)}
-                                        disabled={downloadingVoucherId === voucher.id}
-                                        title="Download PDF"
-                                      >
-                                        {downloadingVoucherId === voucher.id ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Download className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-
-                        {/* Pagination */}
-                        {pagination.totalPages > 1 && (
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-500">
-                              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                              {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                              {pagination.total} results
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                                disabled={pagination.page === 1 || loadingVouchers}
-                              >
-                                Previous
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                                disabled={pagination.page === pagination.totalPages || loadingVouchers}
-                              >
-                                Next
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'quick' && (
-                  <QuickVoucherForm
-                    onSuccess={() => {
-                      loadStats();
-                      loadVouchers();
-                      setActiveTab('all');
-                    }}
-                  />
-                )}
-
-                {activeTab === 'today' && (
-                  <div className="space-y-4">
-                    {/* Search and Filter Section */}
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap gap-4 items-center">
-                        {/* Search Bar */}
-                        <div className="flex-1 min-w-[250px]">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                            <Input
-                              placeholder="Search by route number..."
-                              value={todayRouteSearch}
-                              onChange={(e) => setTodayRouteSearch(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-                        {/* Filter Button */}
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowTodayFilters(!showTodayFilters)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filters
-                          {showTodayFilters ? (
-                            <ChevronUp className="h-4 w-4 ml-2" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 ml-2" />
-                          )}
-                          {(selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all') ? (
-                            <Badge variant="secondary" className="ml-2">
-                              {(selectedFrom && selectedFrom !== 'all' ? 1 : 0) + (selectedTo && selectedTo !== 'all' ? 1 : 0)}
-                            </Badge>
-                          ) : null}
-                        </Button>
-                      </div>
-
-                      {showTodayFilters && (
-                        <Card>
-                          <CardContent className="pt-6">
-                            <div className="flex flex-wrap gap-4 items-end">
-                              <div className="flex-1 min-w-[200px]">
-                                <Label htmlFor="from-filter">From</Label>
-                                <Select
-                                  value={selectedFrom || 'all'}
-                                  onValueChange={(value) => setSelectedFrom(value === 'all' ? null : value)}
-                                >
-                                  <SelectTrigger id="from-filter">
-                                    <SelectValue placeholder="All locations" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">All locations</SelectItem>
-                                    {availableFromOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex-1 min-w-[200px]">
-                                <Label htmlFor="to-filter">To</Label>
-                                <Select
-                                  value={selectedTo || 'all'}
-                                  onValueChange={(value) => setSelectedTo(value === 'all' ? null : value)}
-                                >
-                                  <SelectTrigger id="to-filter">
-                                    <SelectValue placeholder="All locations" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">All locations</SelectItem>
-                                    {availableToOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedFrom(null);
-                                  setSelectedTo(null);
-                                }}
-                                disabled={(!selectedFrom || selectedFrom === 'all') && (!selectedTo || selectedTo === 'all')}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Clear Filters
-                              </Button>
-                            </div>
-                            {((selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all')) && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {selectedFrom && selectedFrom !== 'all' && (
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    From: {selectedFrom}
-                                    <X
-                                      className="h-3 w-3 cursor-pointer"
-                                      onClick={() => setSelectedFrom(null)}
-                                    />
-                                  </Badge>
-                                )}
-                                {selectedTo && selectedTo !== 'all' && (
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    To: {selectedTo}
-                                    <X
-                                      className="h-3 w-3 cursor-pointer"
-                                      onClick={() => setSelectedTo(null)}
-                                    />
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-
-                    {loadingMovements ? (
-                      <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                          <Skeleton key={i} className="h-16 w-full" />
-                        ))}
-                      </div>
-                    ) : (() => {
-                      // Filter movements by route number
-                      const filteredMovements = todayMovements.filter((movement) => {
-                        if (!todayRouteSearch.trim()) return true;
-                        return movement.routeNumber.toLowerCase().includes(todayRouteSearch.toLowerCase());
-                      });
-
-                      return filteredMovements.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            {todayRouteSearch || (selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all') 
-                              ? 'No movements found with selected filters' 
-                              : 'No movements for today'}
-                          </h3>
-                          <p className="text-gray-500">
-                            {todayRouteSearch || (selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all')
-                              ? 'Try adjusting your search or filters to see movements.'
-                              : 'No movements scheduled for today.'}
-                          </p>
-                      </div>
-                    ) : (
-                      <div className="rounded-md border overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Route Number</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Time</TableHead>
-                              <TableHead>Agent Name</TableHead>
-                              <TableHead>Guest Name</TableHead>
-                              <TableHead>Mobile</TableHead>
-                              <TableHead>Pax</TableHead>
-                              <TableHead>From</TableHead>
-                              <TableHead>To</TableHead>
-                              <TableHead>Driver Details 1</TableHead>
-                              <TableHead>Driver Details 2</TableHead>
-                              <TableHead>Vehicle Number</TableHead>
-                              <TableHead>Action</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {filteredMovements.map((movement, idx) => {
-                              const movementId = movement.movementId || `${movement.voucherId}-${movement.movementIndex}`;
-                              const editedMovement = editingMovements.get(movementId) || movement;
-                              
-                              return (
-                                <TableRow key={movementId}>
-                                  <TableCell>{movement.routeNumber}</TableCell>
-                                  <TableCell>{movement.date}</TableCell>
-                                  <TableCell>{movement.time}</TableCell>
-                                  <TableCell>{movement.agentName}</TableCell>
-                                  <TableCell>{movement.guestName}</TableCell>
-                                  <TableCell>{movement.mobile}</TableCell>
-                                  <TableCell>{movement.pax}</TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      <div className="font-medium">{movement.from || 'N/A'}</div>
-                                      <div className="text-gray-500">{movement.fromLocation || ''}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      <div className="font-medium">{movement.to || 'N/A'}</div>
-                                      <div className="text-gray-500">{movement.toLocation || ''}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.driverDetails1 || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'driverDetails1', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Driver 1"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.driverDetails2 || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'driverDetails2', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Driver 2"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.vehicleNumber || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'vehicleNumber', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Vehicle No"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => saveMovement(movement)}
-                                      disabled={savingMovementId === movementId}
-                                    >
-                                      {savingMovementId === movementId ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Save className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                {activeTab === 'tomorrow' && (
-                  <div className="space-y-4">
-                    {/* Search and Filter Section */}
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap gap-4 items-center">
-                        {/* Search Bar */}
-                        <div className="flex-1 min-w-[250px]">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                            <Input
-                              placeholder="Search by route number..."
-                              value={tomorrowRouteSearch}
-                              onChange={(e) => setTomorrowRouteSearch(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-                        {/* Filter Button */}
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowTomorrowFilters(!showTomorrowFilters)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filters
-                          {showTomorrowFilters ? (
-                            <ChevronUp className="h-4 w-4 ml-2" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 ml-2" />
-                          )}
-                          {(selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all') ? (
-                            <Badge variant="secondary" className="ml-2">
-                              {(selectedFrom && selectedFrom !== 'all' ? 1 : 0) + (selectedTo && selectedTo !== 'all' ? 1 : 0)}
-                            </Badge>
-                          ) : null}
-                        </Button>
-                      </div>
-
-                      {showTomorrowFilters && (
-                        <Card>
-                          <CardContent className="pt-6">
-                            <div className="flex flex-wrap gap-4 items-end">
-                              <div className="flex-1 min-w-[200px]">
-                                <Label htmlFor="from-filter-tomorrow">From</Label>
-                                <Select
-                                  value={selectedFrom || 'all'}
-                                  onValueChange={(value) => setSelectedFrom(value === 'all' ? null : value)}
-                                >
-                                  <SelectTrigger id="from-filter-tomorrow">
-                                    <SelectValue placeholder="All locations" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">All locations</SelectItem>
-                                    {availableFromOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex-1 min-w-[200px]">
-                                <Label htmlFor="to-filter-tomorrow">To</Label>
-                                <Select
-                                  value={selectedTo || 'all'}
-                                  onValueChange={(value) => setSelectedTo(value === 'all' ? null : value)}
-                                >
-                                  <SelectTrigger id="to-filter-tomorrow">
-                                    <SelectValue placeholder="All locations" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all">All locations</SelectItem>
-                                    {availableToOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedFrom(null);
-                                  setSelectedTo(null);
-                                }}
-                                disabled={(!selectedFrom || selectedFrom === 'all') && (!selectedTo || selectedTo === 'all')}
-                              >
-                                <X className="h-4 w-4 mr-2" />
-                                Clear Filters
-                              </Button>
-                            </div>
-                            {((selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all')) && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {selectedFrom && selectedFrom !== 'all' && (
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    From: {selectedFrom}
-                                    <X
-                                      className="h-3 w-3 cursor-pointer"
-                                      onClick={() => setSelectedFrom(null)}
-                                    />
-                                  </Badge>
-                                )}
-                                {selectedTo && selectedTo !== 'all' && (
-                                  <Badge variant="secondary" className="flex items-center gap-1">
-                                    To: {selectedTo}
-                                    <X
-                                      className="h-3 w-3 cursor-pointer"
-                                      onClick={() => setSelectedTo(null)}
-                                    />
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-
-                    {loadingMovements ? (
-                      <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                          <Skeleton key={i} className="h-16 w-full" />
-                        ))}
-                      </div>
-                    ) : (() => {
-                      // Filter movements by route number
-                      const filteredMovements = tomorrowMovements.filter((movement) => {
-                        if (!tomorrowRouteSearch.trim()) return true;
-                        return movement.routeNumber.toLowerCase().includes(tomorrowRouteSearch.toLowerCase());
-                      });
-
-                      return filteredMovements.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            {tomorrowRouteSearch || (selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all') 
-                              ? 'No movements found with selected filters' 
-                              : 'No movements for tomorrow'}
-                          </h3>
-                          <p className="text-gray-500">
-                            {tomorrowRouteSearch || (selectedFrom && selectedFrom !== 'all') || (selectedTo && selectedTo !== 'all')
-                              ? 'Try adjusting your search or filters to see movements.'
-                              : 'No movements scheduled for tomorrow.'}
-                          </p>
-                      </div>
-                    ) : (
-                      <div className="rounded-md border overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Route Number</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Time</TableHead>
-                              <TableHead>Agent Name</TableHead>
-                              <TableHead>Guest Name</TableHead>
-                              <TableHead>Mobile</TableHead>
-                              <TableHead>Pax</TableHead>
-                              <TableHead>From</TableHead>
-                              <TableHead>To</TableHead>
-                              <TableHead>Driver Details 1</TableHead>
-                              <TableHead>Driver Details 2</TableHead>
-                              <TableHead>Vehicle Number</TableHead>
-                              <TableHead>Action</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {filteredMovements.map((movement, idx) => {
-                              const movementId = movement.movementId || `${movement.voucherId}-${movement.movementIndex}`;
-                              const editedMovement = editingMovements.get(movementId) || movement;
-                              
-                              return (
-                                <TableRow key={movementId}>
-                                  <TableCell>{movement.routeNumber}</TableCell>
-                                  <TableCell>{movement.date}</TableCell>
-                                  <TableCell>{movement.time}</TableCell>
-                                  <TableCell>{movement.agentName}</TableCell>
-                                  <TableCell>{movement.guestName}</TableCell>
-                                  <TableCell>{movement.mobile}</TableCell>
-                                  <TableCell>{movement.pax}</TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      <div className="font-medium">{movement.from || 'N/A'}</div>
-                                      <div className="text-gray-500">{movement.fromLocation || ''}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      <div className="font-medium">{movement.to || 'N/A'}</div>
-                                      <div className="text-gray-500">{movement.toLocation || ''}</div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.driverDetails1 || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'driverDetails1', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Driver 1"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.driverDetails2 || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'driverDetails2', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Driver 2"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Textarea
-                                      value={editedMovement.vehicleNumber || ''}
-                                      onChange={(e) => updateMovementField(movementId, 'vehicleNumber', e.target.value)}
-                                      className="w-40 min-h-[60px] resize-none"
-                                      placeholder="Vehicle No"
-                                      rows={3}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => saveMovement(movement)}
-                                      disabled={savingMovementId === movementId}
-                                    >
-                                      {savingMovementId === movementId ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Save className="h-4 w-4" />
-                                      )}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <Button variant="outline" size="sm" onClick={() => { loadStats(); loadVouchers(); loadTodayMovements(); loadTomorrowMovements(); }} className="font-bold h-9">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
         </div>
       </div>
 
+      <div className="flex-1 overflow-auto p-4 lg:p-8 space-y-6">
+        {/* Compact Stats Row */}
+        <div className="flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[180px] bg-white rounded-xl border p-3 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0"><Ticket className="h-5 w-5" /></div>
+            <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total</p><p className="text-xl font-black text-gray-900">{loadingStats ? '...' : stats.totalVouchers}</p></div>
+          </div>
+          <div className="flex-1 min-w-[180px] bg-white rounded-xl border p-3 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0"><Calendar className="h-5 w-5" /></div>
+            <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Today</p><p className="text-xl font-black text-gray-900">{loadingStats ? '...' : stats.todayMovements}</p></div>
+          </div>
+          <div className="flex-1 min-w-[180px] bg-white rounded-xl border p-3 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0"><TrendingUp className="h-5 w-5" /></div>
+            <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tomorrow</p><p className="text-xl font-black text-gray-900">{loadingStats ? '...' : stats.tomorrowMovements}</p></div>
+          </div>
+        </div>
+
+        {/* Main Interface Tabs */}
+        <Tabs value={activeMainTab} onValueChange={(v: any) => setActiveMainTab(v)} className="w-full space-y-6">
+          <div className="flex items-center justify-center">
+            <TabsList className="bg-white border shadow-sm p-1 h-12 rounded-2xl">
+              <TabsTrigger value="vouchers" className="data-[state=active]:bg-primary data-[state=active]:text-white font-bold px-10 h-10 rounded-xl transition-all">Vouchers</TabsTrigger>
+              <TabsTrigger value="movements" className="data-[state=active]:bg-secondary data-[state=active]:text-white font-bold px-10 h-10 rounded-xl transition-all">Movements</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="vouchers" className="animate-in fade-in-50 duration-300">
+            <Tabs value={activeVoucherSubTab} onValueChange={(v: any) => setActiveVoucherSubTab(v)} className="space-y-4">
+              <div className="flex items-center justify-center sm:justify-start">
+                <TabsList className="bg-gray-100 border p-1 h-9 rounded-lg">
+                  <TabsTrigger value="all" className="text-xs font-bold px-6 h-7 rounded-md">All Listing</TabsTrigger>
+                  <TabsTrigger value="quick" className="text-xs font-bold px-6 h-7 rounded-md">Quick Create</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="all" className="space-y-4">
+                <Card className="rounded-2xl border shadow-sm overflow-hidden bg-white">
+                  <CardHeader className="pb-3 border-b">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <CardTitle className="text-lg font-bold text-primary">System Vouchers</CardTitle>
+                      <div className="relative w-full sm:w-96">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input placeholder="Search name, voucher # or group..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9 rounded-lg" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500">
+                          <TableRow>
+                            <TableHead className="px-6">Voucher No</TableHead>
+                            <TableHead>Group</TableHead>
+                            <TableHead>Guest Detail</TableHead>
+                            <TableHead>Pax</TableHead>
+                            <TableHead>Created By</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead className="text-right px-6">Action</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loadingVouchers ? [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={7} className="px-6"><Skeleton className="h-10 w-full" /></TableCell></TableRow>) : 
+                           filteredVouchers.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-16 text-gray-400 font-medium tracking-tight">No voucher records matching your query</TableCell></TableRow> :
+                           filteredVouchers.map(v => (
+                            <TableRow key={v.id} className="hover:bg-gray-50/50 transition-colors border-gray-50">
+                              <TableCell className="px-6 font-black text-primary text-sm">{v.voucherNumber}</TableCell>
+                              <TableCell className="text-xs font-bold text-secondary uppercase">{v.groupCode || '—'}</TableCell>
+                              <TableCell><div><p className="font-bold text-sm text-gray-900">{v.guestName}</p><p className="text-[10px] text-gray-400 font-medium">{v.guestMobile}</p></div></TableCell>
+                              <TableCell><Badge variant="outline" className="font-black bg-blue-50/50 border-blue-100 text-blue-700">{v.paxCount} PAX</Badge></TableCell>
+                              <TableCell className="text-xs font-medium text-gray-600">{v.generatedByUser.name}</TableCell>
+                              <TableCell className="text-xs text-gray-400 font-medium">{new Date(v.createdAt).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-right px-6"><div className="flex items-center justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 rounded-lg" onClick={() => router.push(`/dashboard/services/voucher/view/${v.id}`)}><Eye className="h-4 w-4" /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 rounded-lg" onClick={() => downloadVoucherPDF(v.id)} disabled={downloadingVoucherId === v.id}>{downloadingVoucherId === v.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}</Button></div></TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    {pagination.totalPages > 1 && (
+                      <div className="p-4 border-t flex items-center justify-between bg-gray-50/30">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2">Total: {pagination.total} entries</p>
+                        <div className="flex gap-2"><Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })} disabled={pagination.page === 1}>Prev</Button><Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })} disabled={pagination.page === pagination.totalPages}>Next</Button></div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="quick" className="animate-in slide-in-from-bottom-2 duration-300">
+                <Card className="rounded-2xl border-0 shadow-sm overflow-hidden bg-white">
+                  <div className="bg-primary p-6"><h3 className="text-lg font-bold text-white uppercase tracking-tight">Manual Quick Voucher</h3><p className="text-primary-foreground/60 text-[10px] font-medium uppercase tracking-widest mt-1">Generate a transport voucher without an existing booking record</p></div>
+                  <CardContent className="p-6"><QuickVoucherForm onSuccess={() => { loadStats(); loadVouchers(); setActiveVoucherSubTab('all'); }} /></CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="movements" className="animate-in fade-in-50 duration-300 space-y-4">
+            <Tabs value={activeMovementSubTab} onValueChange={(v: any) => setActiveMovementSubTab(v)} className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-2 rounded-xl border shadow-sm">
+                <TabsList className="bg-gray-100 border p-1 h-9 rounded-lg">
+                  <TabsTrigger value="today" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white text-xs font-bold px-8 h-7 rounded-md transition-all">Today</TabsTrigger>
+                  <TabsTrigger value="tomorrow" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white text-xs font-bold px-8 h-7 rounded-md transition-all">Tomorrow</TabsTrigger>
+                </TabsList>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" /><Input placeholder="Filter movements..." value={movementSearch} onChange={(e) => setMovementSearch(e.target.value)} className="pl-9 h-9 rounded-lg" /></div>
+                  <Button variant={showFilters ? "secondary" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)} className="h-9 font-bold rounded-lg"><Filter className="h-4 w-4 mr-2" /> Filter List</Button>
+                </div>
+              </div>
+
+              {showFilters && (
+                <Card className="border-dashed border-2 bg-white/50 rounded-2xl animate-in slide-in-from-top-2 duration-200">
+                  <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div className="space-y-1.5"><Label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">From Location</Label><Select value={selectedFrom || 'all'} onValueChange={(v) => setSelectedFrom(v === 'all' ? null : v)}><SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger><SelectContent className="rounded-xl border-0 shadow-2xl"><SelectItem value="all">All Spectrum</SelectItem>{availableFromOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-1.5"><Label className="text-[10px] font-bold uppercase text-gray-500 tracking-widest ml-1">To Location</Label><Select value={selectedTo || 'all'} onValueChange={(v) => setSelectedTo(v === 'all' ? null : v)}><SelectTrigger className="h-9"><SelectValue placeholder="All" /></SelectTrigger><SelectContent className="rounded-xl border-0 shadow-2xl"><SelectItem value="all">All Spectrum</SelectItem>{availableToOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select></div>
+                    <Button variant="ghost" size="sm" className="h-9 text-xs font-bold text-primary" onClick={() => { setSelectedFrom(null); setSelectedTo(null); }}>Reset All Filters</Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {currentMoveStats.length > 0 && (
+                <div className="flex flex-wrap gap-2 py-1">
+                  {currentMoveStats.map((stat, idx) => (
+                    <div key={idx} className="bg-white border border-gray-100 rounded-full px-3 py-1 flex items-center gap-2 shadow-sm">
+                      <span className="text-[10px] font-bold text-gray-700">{stat.from}</span>
+                      <ArrowRight className="h-2.5 w-2.5 text-gray-300" />
+                      <span className="text-[10px] font-bold text-gray-700">{stat.to}</span>
+                      <Badge className="h-5 px-1.5 text-[10px] bg-primary/10 text-primary border-0 font-black">{stat.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Card className="rounded-2xl border shadow-sm overflow-hidden bg-white">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500">
+                      <TableRow>
+                        <TableHead className="px-6">Route</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Guest / Voucher</TableHead>
+                        <TableHead>Pax</TableHead>
+                        <TableHead>Sector Detail</TableHead>
+                        <TableHead>Driver & Vehicle Information</TableHead>
+                        <TableHead className="px-6 text-right w-10"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loadingMovements ? [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={7} className="px-6"><Skeleton className="h-16 w-full" /></TableCell></TableRow>) : 
+                       filteredMovements.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-20 text-gray-400 font-medium">No movements scheduled for this selection</TableCell></TableRow> :
+                       filteredMovements.map(m => {
+                        const mid = m.movementId || `${m.voucherId}-${m.movementIndex}`;
+                        const edited = editingMovements.get(mid) || m;
+                        return (
+                          <TableRow key={mid} className="hover:bg-gray-50/50 transition-colors border-gray-50">
+                            <TableCell className="px-6 font-black text-primary text-xs">{m.routeNumber}</TableCell>
+                            <TableCell><Badge variant="secondary" className="font-black text-[10px]">{m.time}</Badge></TableCell>
+                            <TableCell><div><p className="font-bold text-sm text-gray-900 truncate w-40">{m.guestName}</p><p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">REF: {m.voucherNumber}</p></div></TableCell>
+                            <TableCell><Badge className="bg-blue-50 text-blue-700 border-blue-100 font-black text-[10px]">{m.pax} PAX</Badge></TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 text-xs font-black text-gray-700"><span>{m.from}</span><ArrowRight className="h-3 w-3 text-gray-300" /><span>{m.to}</span></div>
+                              <div className="text-[9px] text-gray-400 mt-0.5 font-medium truncate max-w-[180px]">{m.fromLocation} → {m.toLocation}</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="grid grid-cols-2 gap-2 w-80">
+                                <div className="space-y-1"><p className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Driver Detail</p><Textarea placeholder="Contact..." className="text-[10px] min-h-[45px] p-2 rounded-lg resize-none" value={edited.driverDetails1 || ''} onChange={(e) => updateMovementField(mid, 'driverDetails1', e.target.value)} /></div>
+                                <div className="space-y-1"><p className="text-[8px] font-black text-gray-400 uppercase tracking-widest ml-1">Vehicle No</p><Textarea placeholder="Plate..." className="text-[10px] min-h-[45px] p-2 rounded-lg resize-none" value={edited.vehicleNumber || ''} onChange={(e) => updateMovementField(mid, 'vehicleNumber', e.target.value)} /></div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-6 text-right">
+                              <Button size="icon" variant="ghost" className={cn("h-9 w-9 rounded-xl transition-all", editingMovements.has(mid) ? "bg-primary text-white hover:bg-primary/90 shadow-md" : "text-gray-300 hover:text-gray-400")} onClick={() => saveMovement(m)} disabled={savingMovementId === mid || !editingMovements.has(mid)}>
+                                {savingMovementId === mid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
