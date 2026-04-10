@@ -57,13 +57,10 @@ export default function Navbar() {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Voucher Management', path: '/dashboard/services/voucher', icon: Ticket },
     { name: 'Bookings', path: '/dashboard/umrah-visa/bookings', icon: FileText },
-    { name: 'Trip Info', path: '/dashboard/umrah-visa/trip-info', icon: MapPin },
+    { name: 'Trips', path: '/dashboard/umrah-visa/trip-info', icon: MapPin },
   ];
 
   const appItems = [
-    { name: 'Create Individual', path: '/dashboard/umrah-visa/create-individual', icon: PlusCircle },
-    { name: 'Create Group', path: '/dashboard/umrah-visa/create-group', icon: Users },
-    { name: 'Add to Existing', path: '/dashboard/umrah-visa/add-to-existing-booking', icon: PlusCircle },
     { name: 'Assign Group', path: '/dashboard/umrah-visa/assign-group', icon: Users },
     { name: 'Vouchers (Umrah)', path: '/dashboard/umrah-visa/voucher', icon: Award },
     { name: 'Invoices', path: '/dashboard/umrah-visa/invoice', icon: FileText },
@@ -116,7 +113,7 @@ export default function Navbar() {
                       : "text-gray-500 hover:bg-gray-100 hover:text-secondary"
                   )}
                 >
-                  More
+                  Download/Upload
                   <ChevronDown className={cn("h-4 w-4 transition-transform", isAppsDropdownOpen && "rotate-180")} />
                 </button>
 
@@ -209,7 +206,7 @@ export default function Navbar() {
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Quick Actions</p>
                       <div className="grid grid-cols-2 gap-2 px-2">
-                        {appItems.slice(0, 4).map((item) => (
+                        {appItems.map((item) => (
                           <button
                             key={item.path}
                             onClick={() => router.push(item.path)}
