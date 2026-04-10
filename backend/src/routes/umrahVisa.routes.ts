@@ -894,7 +894,8 @@ router.patch('/:bookingId/alternate-info', authenticate, async (req, res) => {
       travelDetails,
       hotelBookings,
       transportBookings,
-      movementDetails
+      movementDetails,
+      iqamaDetails
     } = req.body;
 
     const results = await prisma.$transaction(async (tx) => {
@@ -993,6 +994,34 @@ router.patch('/:bookingId/alternate-info', authenticate, async (req, res) => {
             })),
           });
         }
+      }
+
+      // 5. Update Alternate Iqama Details
+      if (iqamaDetails) {
+        await tx.umrahSponserIqamaDetails.upsert({
+          where: {
+            bookingId_isAlternate: {
+              bookingId,
+              isAlternate: true,
+            },
+          },
+          update: {
+            iqamaSponserName: iqamaDetails.iqamaName || '',
+            iqamaNumber: iqamaDetails.iqamaNumber || '',
+            sponserDob: iqamaDetails.iqamaDob ? new Date(iqamaDetails.iqamaDob) : new Date(),
+            sponserMobileNumber: iqamaDetails.iqamaMobile || '',
+            sponserNationalShortAddress: iqamaDetails.iqamaNationalShortAddress || '',
+          },
+          create: {
+            bookingId,
+            isAlternate: true,
+            iqamaSponserName: iqamaDetails.iqamaName || '',
+            iqamaNumber: iqamaDetails.iqamaNumber || '',
+            sponserDob: iqamaDetails.iqamaDob ? new Date(iqamaDetails.iqamaDob) : new Date(),
+            sponserMobileNumber: iqamaDetails.iqamaMobile || '',
+            sponserNationalShortAddress: iqamaDetails.iqamaNationalShortAddress || '',
+          },
+        });
       }
 
       return { updatedTravel };

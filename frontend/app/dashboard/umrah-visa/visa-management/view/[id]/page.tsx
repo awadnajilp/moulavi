@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { umrahVisaAPI, uploadAPI } from '@/lib/api';
 import { toast } from 'sonner';
@@ -19,7 +18,6 @@ export default function ViewUmrahVisaBookingPage() {
   const bookingId = (params?.id as string) || '';
   const user = getUser();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<any>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
@@ -41,14 +39,6 @@ export default function ViewUmrahVisaBookingPage() {
       const res = await umrahVisaAPI.getBookingById(bookingId);
       const bookingData = res.data;
       
-      // Debug: Log booking data to console
-      console.log('Booking Data:', {
-        accommodationType: bookingData.accommodationType,
-        hotelBookings: bookingData.hotelBookings,
-        hotelBookingsLength: bookingData.hotelBookings?.length,
-        sponsorIqamaDetails: bookingData.sponsorIqamaDetails,
-      });
-      
       setBooking(bookingData);
     } catch (err: any) {
       console.error(err);
@@ -67,15 +57,6 @@ export default function ViewUmrahVisaBookingPage() {
     }
   };
 
-  const formatTime = (dateTime?: string | Date) => {
-    if (!dateTime) return 'N/A';
-    try {
-      return new Date(dateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return 'N/A';
-    }
-  };
-
   const formatDateTime = (dateTime?: string | Date) => {
     if (!dateTime) return { date: 'N/A', time: 'N/A' };
     try {
@@ -89,7 +70,6 @@ export default function ViewUmrahVisaBookingPage() {
     }
   };
 
-  // Helper to format transport route from cities
   const formatTransportRoute = (route: any) => {
     if (!route) return 'N/A';
     const cities = [
@@ -106,8 +86,9 @@ export default function ViewUmrahVisaBookingPage() {
     const hotels = booking.hotelBookings?.filter((h: any) => !!h.isAlternate === isAlt) || [];
     const transports = booking.transportBookings?.filter((t: any) => !!t.isAlternate === isAlt) || [];
     const movements = booking.movementDetails?.filter((m: any) => !!m.isAlternate === isAlt) || [];
+    const iqama = booking.sponsorIqamaDetails?.find((i: any) => !!i.isAlternate === isAlt);
 
-    if (!travel && hotels.length === 0 && transports.length === 0 && movements.length === 0) {
+    if (!travel && hotels.length === 0 && transports.length === 0 && movements.length === 0 && !iqama) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-gray-500 border-2 border-dashed rounded-lg bg-gray-50/50">
           <Info className="h-12 w-12 mb-4 opacity-20" />
@@ -119,7 +100,6 @@ export default function ViewUmrahVisaBookingPage() {
 
     return (
       <div className="space-y-6">
-        {/* Travel Details */}
         {travel && (
           <Card>
             <CardHeader>
@@ -184,7 +164,6 @@ export default function ViewUmrahVisaBookingPage() {
           </Card>
         )}
 
-        {/* Transportation */}
         {transports.length > 0 && (
           <Card>
             <CardHeader>
@@ -217,7 +196,6 @@ export default function ViewUmrahVisaBookingPage() {
           </Card>
         )}
 
-        {/* Accommodation */}
         {hotels.length > 0 && (
           <Card>
             <CardHeader>
@@ -257,7 +235,6 @@ export default function ViewUmrahVisaBookingPage() {
           </Card>
         )}
 
-        {/* Movement Details */}
         {movements.length > 0 && (
           <Card>
             <CardHeader>
@@ -299,21 +276,49 @@ export default function ViewUmrahVisaBookingPage() {
             </CardContent>
           </Card>
         )}
+
+        {iqama && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2"><Building className="h-5 w-5 text-indigo-600" /> Sponsor & Iqama Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sponsor Name</p>
+                  <p className="text-sm font-medium text-gray-900">{iqama.iqamaSponserName}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Iqama Number</p>
+                  <p className="text-sm font-medium text-gray-900">{iqama.iqamaNumber}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mobile Number</p>
+                  <p className="text-sm font-medium text-gray-900">{iqama.sponserMobileNumber}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Date of Birth</p>
+                  <p className="text-sm font-medium text-gray-900">{formatDate(iqama.sponserDob)}</p>
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">National Short Address</p>
+                  <p className="text-sm font-medium text-gray-900">{iqama.sponserNationalShortAddress}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   };
 
   const handleDownloadZip = async () => {
     if (!bookingId || downloadingZip) return;
-    
     try {
       setDownloadingZip(true);
       toast.info('Downloading zip file...');
-      
       const zipResponse = await umrahVisaAPI.downloadBookingZip(bookingId);
-      
       if (zipResponse.data.downloadUrl) {
-        // If S3, use presigned URL to download
         const link = document.createElement('a');
         link.href = zipResponse.data.downloadUrl;
         link.download = zipResponse.data.fileName || 'documents.zip';
@@ -334,20 +339,16 @@ export default function ViewUmrahVisaBookingPage() {
 
   const handleDownloadConfirmationImage = async () => {
     if (!booking || !bookingId || downloadingConfirmation) return;
-    
-    const confirmationImagePath = booking.sponsorIqamaDetails?.confirmationImagePath;
+    const mainIqama = booking.sponsorIqamaDetails?.find((i: any) => !i.isAlternate);
+    const confirmationImagePath = mainIqama?.confirmationImagePath;
     if (!confirmationImagePath) {
       toast.error('Confirmation image not found');
       return;
     }
-
     try {
       setDownloadingConfirmation(true);
       toast.info('Downloading confirmation image...');
-
-      // Use the dedicated download confirmation endpoint which handles presigned URLs
       const response = await umrahVisaAPI.downloadConfirmation(bookingId);
-      
       if (response.data.downloadUrl) {
         const link = document.createElement('a');
         link.href = response.data.downloadUrl;
@@ -368,173 +369,156 @@ export default function ViewUmrahVisaBookingPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
-      <div className="flex-1 overflow-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-          <div className="px-4 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="leading-tight">
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{booking?.groupName || 'Not Assigned'}</h1>
-                <p className="text-sm text-gray-500">ID: {booking?.groupNumber || 'Not Assigned'}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {booking && (
-                  <Badge className={`text-sm font-medium ${
-                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    booking.status === 'documents_downloaded' ? 'bg-purple-100 text-purple-800' :
-                    booking.status === 'group_assigned' ? 'bg-blue-100 text-blue-800' :
-                    booking.status === 'voucher' ? 'bg-orange-100 text-orange-800' :
-                    booking.status === 'bill' ? 'bg-indigo-100 text-indigo-800' :
-                    booking.status === 'booking_success' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {booking.status?.replace(/_/g, ' ').toUpperCase()}
-                  </Badge>
-                )}
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAltInfoDialog(true)}
-                  className="flex items-center gap-2 border-secondary text-secondary hover:bg-secondary/10"
-                >
-                  <Route className="h-4 w-4" />
-                  Manage Alternate Info
-                </Button>
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 min-h-screen">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+        <div className="px-4 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="leading-tight">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">{booking?.groupName || 'Not Assigned'}</h1>
+              <p className="text-sm text-gray-500">ID: {booking?.groupNumber || 'Not Assigned'}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {booking && (
+                <Badge className={`text-sm font-medium ${
+                  booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  booking.status === 'documents_downloaded' ? 'bg-purple-100 text-purple-800' :
+                  booking.status === 'group_assigned' ? 'bg-blue-100 text-blue-800' :
+                  booking.status === 'voucher' ? 'bg-orange-100 text-orange-800' :
+                  booking.status === 'bill' ? 'bg-indigo-100 text-indigo-800' :
+                  booking.status === 'booking_success' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {booking.status?.replace(/_/g, ' ').toUpperCase()}
+                </Badge>
+              )}
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAltInfoDialog(true)}
+                className="flex items-center gap-2 border-secondary text-secondary hover:bg-secondary/10"
+              >
+                <Route className="h-4 w-4" />
+                Manage Alternate Info
+              </Button>
 
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadZip}
-                  disabled={downloadingZip}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  {downloadingZip ? 'Downloading...' : 'Download Documents'}
-                </Button>
-                <Button variant="outline" onClick={() => router.back()}>
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Back
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleDownloadZip}
+                disabled={downloadingZip}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {downloadingZip ? 'Downloading...' : 'Download Documents'}
+              </Button>
+              <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-1" /> Back
+              </Button>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="p-4 lg:p-8">
-          {loading ? (
-            <div className="py-12 text-center">Loading...</div>
-          ) : !booking ? (
-            <div className="py-12 text-center text-gray-500">No booking details available</div>
-          ) : (
-            <div className="space-y-4 lg:space-y-6">
-              {/* Summary Card - Key Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2"><Building className="h-5 w-5 text-blue-600" /> Booking Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Party Name</p>
-                      <p className="text-lg font-bold text-gray-900">{booking.party?.partyName || 'N/A'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Group Number</p>
-                      <p className="text-lg font-bold text-gray-900">{booking.groupNumber || '—'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Passengers</p>
-                      <p className="text-lg font-bold text-gray-900">{booking.passengerCount}</p>
-                    </div>
+      <div className="p-4 lg:p-8 flex-1 overflow-auto">
+        {loading ? (
+          <div className="py-12 text-center">Loading...</div>
+        ) : !booking ? (
+          <div className="py-12 text-center text-gray-500">No booking details available</div>
+        ) : (
+          <div className="space-y-4 lg:space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2"><Building className="h-5 w-5 text-blue-600" /> Booking Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Party Name</p>
+                    <p className="text-lg font-bold text-gray-900">{booking.party?.partyName || 'N/A'}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Group Number</p>
+                    <p className="text-lg font-bold text-gray-900">{booking.groupNumber || '—'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Passengers</p>
+                    <p className="text-lg font-bold text-gray-900">{booking.passengerCount}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Party Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><Mail className="h-5 w-5 text-indigo-600" /> Party Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Mail className="h-5 w-5 text-indigo-600" /> Party Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Email</p>
+                    <p className="text-sm text-gray-900 break-all">{booking.party?.email || 'N/A'}</p>
+                  </div>
+                  {booking.party?.contactNumber && (
                     <div>
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Email</p>
-                      <p className="text-sm text-gray-900 break-all">{booking.party?.email || 'N/A'}</p>
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Contact</p>
+                      <p className="text-sm text-gray-900">{booking.party.contactNumber}</p>
                     </div>
-                    {booking.party?.contactNumber && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Contact</p>
-                        <p className="text-sm text-gray-900">{booking.party.contactNumber}</p>
-                      </div>
-                    )}
-                    {booking.party?.whatsappNumber && (
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">WhatsApp</p>
-                        <p className="text-sm text-gray-900">{booking.party.whatsappNumber}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Main Information Tabs */}
-              <Tabs defaultValue="main" className="w-full">
-                <div className="flex items-center justify-between mb-4">
-                  <TabsList className="bg-white border">
-                    <TabsTrigger value="main" className="data-[state=active]:bg-primary data-[state=active]:text-white">Main Info</TabsTrigger>
-                    <TabsTrigger value="alternate" className="data-[state=active]:bg-secondary data-[state=active]:text-white">Alternate Info</TabsTrigger>
-                  </TabsList>
-                  {booking.status === 'pending' && (
-                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
-                      <Clock className="h-3 w-3 mr-1" /> Draft Mode
-                    </Badge>
+                  )}
+                  {booking.party?.whatsappNumber && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">WhatsApp</p>
+                      <p className="text-sm text-gray-900">{booking.party.whatsappNumber}</p>
+                    </div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
 
-                <TabsContent value="main" className="space-y-6 animate-in fade-in-50 duration-300">
-                  {renderBookingDetails(false)}
-                </TabsContent>
-                
-                <TabsContent value="alternate" className="space-y-6 animate-in fade-in-50 duration-300">
-                  {renderBookingDetails(true)}
-                </TabsContent>
-              </Tabs>
+            <Tabs defaultValue="main" className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <TabsList className="bg-white border">
+                  <TabsTrigger value="main" className="data-[state=active]:bg-primary data-[state=active]:text-white">Main Info</TabsTrigger>
+                  <TabsTrigger value="alternate" className="data-[state=active]:bg-secondary data-[state=active]:text-white">Alternate Info</TabsTrigger>
+                </TabsList>
+                {booking.status === 'pending' && (
+                  <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                    <Clock className="h-3 w-3 mr-1" /> Draft Mode
+                  </Badge>
+                )}
+              </div>
 
-              {/* Iqama Details - Show separately if applicable */}
-              {booking.accommodationType === 'iqama' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><Building className="h-5 w-5 text-indigo-600" /> Sponsor & Iqama Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {booking.sponsorIqamaDetails ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Iqama Number</p>
-                            <p className="text-sm font-medium text-gray-900">{booking.sponsorIqamaDetails.iqamaNumber || 'N/A'}</p>
+              <TabsContent value="main" className="space-y-6 animate-in fade-in-50 duration-300">
+                {renderBookingDetails(false)}
+              </TabsContent>
+              
+              <TabsContent value="alternate" className="space-y-6 animate-in fade-in-50 duration-300">
+                {renderBookingDetails(true)}
+              </TabsContent>
+            </Tabs>
+
+            {booking.accommodationType === 'iqama' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Building className="h-5 w-5 text-indigo-600" /> Iqama Confirmation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const mainIqama = booking.sponsorIqamaDetails?.find((i: any) => !i.isAlternate);
+                    if (mainIqama?.confirmationImagePath) {
+                      return (
+                        <div className="space-y-4">
+                          <div className="relative h-48 w-full max-w-md border rounded-lg overflow-hidden group">
+                            <img 
+                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}${mainIqama.confirmationImagePath}`} 
+                              alt="Confirmation" 
+                              className="h-full w-full object-contain bg-white"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Button variant="secondary" size="sm" onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}${mainIqama.confirmationImagePath}`, '_blank')}>
+                                <Download className="h-4 w-4 mr-2" /> View Original
+                              </Button>
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Sponsor Name</p>
-                            <p className="text-sm font-medium text-gray-900">{booking.sponsorIqamaDetails.iqamaSponserName || 'N/A'}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Date of Birth</p>
-                            <p className="text-sm font-medium text-gray-900">{formatDate(booking.sponsorIqamaDetails.sponserDob)}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Mobile Number</p>
-                            <p className="text-sm font-medium text-gray-900">{booking.sponsorIqamaDetails.sponserMobileNumber || 'N/A'}</p>
-                          </div>
-                          <div className="space-y-1 md:col-span-2">
-                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">National Short Address</p>
-                            <p className="text-sm font-medium text-gray-900">{booking.sponsorIqamaDetails.sponserNationalShortAddress || 'N/A'}</p>
-                          </div>
-                        </div>
-                        {booking.sponsorIqamaDetails.confirmationImagePath && (
-                          <div className="flex items-center justify-end">
+                          <div className="flex items-center justify-start">
                             <Button
                               onClick={handleDownloadConfirmationImage}
                               disabled={downloadingConfirmation}
@@ -542,60 +526,58 @@ export default function ViewUmrahVisaBookingPage() {
                               className="flex items-center gap-2"
                             >
                               <Download className="h-4 w-4" />
-                              {downloadingConfirmation ? 'Downloading...' : 'Download Confirmation Image'}
+                              {downloadingConfirmation ? 'Downloading...' : 'Download Image'}
                             </Button>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 italic">No sponsor details available.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Passengers */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-rose-600" /> Passengers ({booking.passengers?.length || 0})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(booking.passengers || []).map((p: any) => (
-                      <div 
-                        key={p.id} 
-                        className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 text-base mb-2">
-                              {p.fullName || 'N/A'}
-                            </h3>
-                            {p.isLeadPassenger && (
-                              <Badge className="bg-yellow-100 text-yellow-800 border-0 text-xs font-semibold mb-2">
-                                Lead Passenger
-                              </Badge>
-                            )}
-                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                            <span className="text-sm text-gray-600 font-medium">Passport Number</span>
-                            <span className="text-sm text-gray-900 font-semibold">{p.passportNumber || 'N/A'}</span>
-                          </div>
-                          <div className="flex items-center justify-between py-2">
-                            <span className="text-sm text-gray-600 font-medium">Nationality</span>
-                            <span className="text-sm text-gray-900 font-semibold">{p.nationality || 'N/A'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      );
+                    }
+                    return <p className="text-sm text-gray-500 italic">No confirmation image uploaded.</p>;
+                  })()}
                 </CardContent>
               </Card>
-            </div>
-          )}
-        </div>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-rose-600" /> Passengers ({booking.passengers?.length || 0})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(booking.passengers || []).map((p: any) => (
+                    <div 
+                      key={p.id} 
+                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-900 text-base mb-2">
+                            {p.fullName || 'N/A'}
+                          </h3>
+                          {p.isLeadPassenger && (
+                            <Badge className="bg-yellow-100 text-yellow-800 border-0 text-xs font-semibold mb-2">
+                              Lead Passenger
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                          <span className="text-sm text-gray-600 font-medium">Passport Number</span>
+                          <span className="text-sm text-gray-900 font-semibold">{p.passportNumber || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-sm text-gray-600 font-medium">Nationality</span>
+                          <span className="text-sm text-gray-900 font-semibold">{p.nationality || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       <ManageAlternateInfoDialog 

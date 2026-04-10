@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -16,7 +15,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { 
-  Menu, 
   Search, 
   RefreshCw,
   Eye,
@@ -34,7 +32,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { voucherAPI } from '@/lib/api';
 import api from '@/lib/api';
@@ -102,8 +99,6 @@ interface Stats {
 export default function VoucherServicePage() {
   const router = useRouter();
   const user = getUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'quick' | 'today' | 'tomorrow'>('all');
   
   // Stats
@@ -480,38 +475,13 @@ export default function VoucherServicePage() {
   });
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar 
-          collapsed={sidebarCollapsed}
-          onCollapsedChange={setSidebarCollapsed}
-        />
-      </div>
-
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
+    <div className="flex-1 flex flex-col bg-gray-50/50">
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Header Bar */}
         <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Voucher Management</h1>
                 <p className="text-xs lg:text-sm text-gray-500 mt-0.5">

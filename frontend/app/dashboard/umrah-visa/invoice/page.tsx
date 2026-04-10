@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -23,7 +22,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Menu, 
   Search,
   Receipt,
   CheckCircle,
@@ -33,7 +31,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { UmrahVisaBooking, UmrahVisaStatus } from '@/types';
 import { umrahVisaAPI } from '@/lib/api';
@@ -41,8 +38,6 @@ import { UMRAH_VISA_STATUS_CONFIG } from '@/lib/constants';
 
 export default function InvoicePage() {
   const user = getUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookingList, setBookingList] = useState<UmrahVisaBooking[]>([]);
   const [filteredData, setFilteredData] = useState<UmrahVisaBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -256,24 +251,11 @@ export default function InvoicePage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
-
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
+    <div className="flex-1 flex flex-col bg-gray-50/50">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(true)}>
-                <Menu className="h-5 w-5" />
-              </Button>
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Invoice</h1>
                 <p className="text-xs lg:text-sm text-gray-500 mt-0.5">Manage billing and completion status</p>

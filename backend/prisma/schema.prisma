@@ -103,7 +103,7 @@ model UmrahVisaBooking {
   hotelBookings             UmrahHotelBooking[]
   movementDetails           UmrahMovementDetail[]
   passengers                UmrahPassenger[]
-  sponsorIqamaDetails       UmrahSponserIqamaDetails?
+  sponsorIqamaDetails       UmrahSponserIqamaDetails[]
   transportBookings         UmrahTransportBooking[]
   travelDetails             UmrahTravelDetails[]
   lastUpdatedByUser         User?                     @relation("BookingLastUpdatedBy", fields: [lastUpdatedBy], references: [id])
@@ -445,7 +445,8 @@ model UmrahHotelBooking {
 
 model UmrahSponserIqamaDetails {
   id                          String           @id @default(uuid())
-  bookingId                   String           @unique @map("booking_id")
+  bookingId                   String           @map("booking_id")
+  isAlternate                 Boolean          @default(false) @map("is_alternate")
   iqamaSponserName            String           @map("iqama_sponser_name")
   iqamaNumber                 String           @map("iqama_number")
   sponserDob                  DateTime         @map("sponser_dob")
@@ -457,7 +458,9 @@ model UmrahSponserIqamaDetails {
   updatedAt                   DateTime         @default(now()) @updatedAt @map("updated_at")
   booking                     UmrahVisaBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@unique([bookingId, isAlternate])
   @@index([bookingId])
+  @@index([isAlternate])
   @@index([iqamaNumber])
   @@map("umrah_sponser_iqama_details")
 }

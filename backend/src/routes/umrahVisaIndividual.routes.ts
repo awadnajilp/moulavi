@@ -795,7 +795,12 @@ router.patch('/:bookingId/accommodation', authenticate, async (req, res) => {
     if (booking.accommodationType === 'iqama') {
       // Update or create sponsor iqama details
       const sponsorIqama = await prisma.umrahSponserIqamaDetails.upsert({
-        where: { bookingId },
+        where: {
+          bookingId_isAlternate: {
+            bookingId,
+            isAlternate: false,
+          },
+        },
         update: {
           iqamaSponserName: iqamaSponserName ?? undefined,
           iqamaNumber: iqamaNumber ?? undefined,
@@ -805,6 +810,7 @@ router.patch('/:bookingId/accommodation', authenticate, async (req, res) => {
         },
         create: {
           bookingId,
+          isAlternate: false,
           iqamaSponserName: iqamaSponserName || '',
           iqamaNumber: iqamaNumber || '',
           sponserDob: sponserDob ? new Date(sponserDob) : new Date(),

@@ -292,7 +292,12 @@ router.post('/:bookingId/upload-confirmation', authenticate, async (req, res) =>
     // Update iqama details with confirmation image
     await prisma.$transaction(async (tx) => {
       await tx.umrahSponserIqamaDetails.update({
-        where: { bookingId },
+        where: {
+          bookingId_isAlternate: {
+            bookingId,
+            isAlternate: false,
+          },
+        },
         data: {
           confirmationImagePath,
           confirmationUploadedAt: new Date(),
@@ -325,15 +330,16 @@ router.post('/:bookingId/upload-confirmation', authenticate, async (req, res) =>
     });
 
     // Send notification (email + WhatsApp) to iqama holder
-    if (finalBooking?.sponsorIqamaDetails) {
+    const mainIqama = finalBooking?.sponsorIqamaDetails?.find((i: any) => !i.isAlternate);
+    if (mainIqama) {
       try {
         const { sendIqamaConfirmationEmail } = await import('../services/emailService');
-        const iqamaHolderName = finalBooking.sponsorIqamaDetails.iqamaSponserName || 'Valued Customer';
-        const iqamaHolderPhone = finalBooking.sponsorIqamaDetails.sponserMobileNumber || undefined;
-        const confirmationImagePath = finalBooking.sponsorIqamaDetails.confirmationImagePath || undefined;
+        const iqamaHolderName = mainIqama.iqamaSponserName || 'Valued Customer';
+        const iqamaHolderPhone = mainIqama.sponserMobileNumber || undefined;
+        const confirmationImagePath = mainIqama.confirmationImagePath || undefined;
         
         // Use umrahVisaProvider email if available, otherwise skip email
-        const recipientEmail = finalBooking.umrahVisaProvider?.email || undefined;
+        const recipientEmail = finalBooking?.umrahVisaProvider?.email || undefined;
         
         if (recipientEmail || iqamaHolderPhone) {
           await sendIqamaConfirmationEmail(
@@ -394,11 +400,12 @@ router.get('/:bookingId/download-confirmation', authenticate, async (req, res) =
       });
     }
 
-    if (!booking.sponsorIqamaDetails) {
+    const mainIqama = booking.sponsorIqamaDetails?.find((i: any) => !i.isAlternate);
+    if (!mainIqama) {
       return res.status(404).json({ error: 'Iqama details not found for this booking' });
     }
 
-    const confirmationImagePath = booking.sponsorIqamaDetails.confirmationImagePath;
+    const confirmationImagePath = mainIqama.confirmationImagePath;
     if (!confirmationImagePath) {
       return res.status(404).json({ error: 'Confirmation image not found for this booking' });
     }

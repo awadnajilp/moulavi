@@ -8,10 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { getUser, hasRole } from '@/lib/auth';
-import Sidebar from '@/components/Sidebar';
-import { UploadCloud, File, X, Menu, Users, ChevronRight } from 'lucide-react';
+import { UploadCloud, File, X, Users, ChevronRight } from 'lucide-react';
 import { umrahVisaAPI, partyAPI } from '@/lib/api';
 
 interface UmrahVisaBooking {
@@ -41,8 +39,6 @@ export default function AdminAddToExistingBookingPage() {
   const [parties, setParties] = useState<Party[]>([]);
   const [loadingParties, setLoadingParties] = useState(true);
   const [selectedPartyId, setSelectedPartyId] = useState<string>('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
     existingBookingId: '',
     newGroupNumber: '',
@@ -96,7 +92,6 @@ export default function AdminAddToExistingBookingPage() {
       setLoadingBookings(true);
       const response = await umrahVisaAPI.getBookings({ page: 1, limit: 1000 });
       const allBookings = response.data.bookings || [];
-      // Filter bookings by selected party and only show group bookings
       const filteredBookings = allBookings.filter((booking: UmrahVisaBooking) => 
         booking.partyId === selectedPartyId && booking.visaType === 'group_visa'
       );
@@ -212,42 +207,21 @@ export default function AdminAddToExistingBookingPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
-
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Header Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Add to Existing Booking</h1>
-              <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
-                Add a new group to an existing booking on behalf of a party
-              </p>
-            </div>
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50/50 min-h-screen">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Add to Existing Booking</h1>
+            <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
+              Add a new group to an existing booking on behalf of a party
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Content */}
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
         <div className="p-4 lg:p-8 pb-24">
           {!selectedPartyId ? (
             /* Party Selection Screen - Show first */
@@ -472,4 +446,3 @@ export default function AdminAddToExistingBookingPage() {
     </div>
   );
 }
-

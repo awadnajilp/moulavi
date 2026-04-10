@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { 
   Table,
   TableBody,
@@ -18,12 +17,10 @@ import {
 import { 
   Search, 
   Users,
-  Menu,
   RefreshCw,
   Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { UmrahVisaBooking, UmrahVisaStatus } from '@/types';
 import { umrahVisaAPI, uploadAPI } from '@/lib/api';
@@ -32,8 +29,6 @@ import { UMRAH_VISA_STATUS_CONFIG } from '@/lib/constants';
 export default function TripInfoPage() {
   const router = useRouter();
   const user = getUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookingList, setBookingList] = useState<UmrahVisaBooking[]>([]);
   const [filteredData, setFilteredData] = useState<UmrahVisaBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +41,7 @@ export default function TripInfoPage() {
       return;
     }
     fetchBookings();
-  }, []); // Remove user and router from dependencies to prevent infinite loop
+  }, []);
 
   useEffect(() => {
     filterData();
@@ -58,7 +53,6 @@ export default function TripInfoPage() {
       const response = await umrahVisaAPI.getBookings({ limit: 1000, status: 'group_assigned' });
       const data = response.data;
       
-      // Filter only group_assigned bookings (both iqama and hotel)
       const bookingsData = data.bookings
         .filter((booking: any) => booking.status === 'group_assigned')
         .map((booking: any) => booking);
@@ -75,14 +69,12 @@ export default function TripInfoPage() {
   const filterData = () => {
     let filtered = bookingList;
 
-    // Filter by accommodation type based on active tab
     if (activeTab === 'iqama') {
       filtered = filtered.filter(booking => booking.accommodationType === 'iqama');
     } else if (activeTab === 'hotel') {
       filtered = filtered.filter(booking => booking.accommodationType === 'hotel');
     }
 
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(booking =>
@@ -96,7 +88,6 @@ export default function TripInfoPage() {
     setFilteredData(filtered);
   };
 
-  // Calculate total passengers for iqama bookings with status group_assigned
   const totalIqamaPassengers = useMemo(() => {
     if (activeTab !== 'iqama') return 0;
     return filteredData.reduce((sum, booking) => {
@@ -135,8 +126,6 @@ export default function TripInfoPage() {
     }
   };
 
-  // Action Handlers
-
   const handleUploadConfirmation = async (booking: UmrahVisaBooking, file: File) => {
     if (!file || !booking.id) {
       toast.error('Please select an image');
@@ -146,17 +135,13 @@ export default function TripInfoPage() {
     try {
       toast.info('Uploading confirmation image...');
       
-      // First, upload the actual file
       const uploadResponse = await uploadAPI.uploadDocument(
         booking.id,
         file,
         'confirmation_image'
       );
       
-      // Get the file path from the upload response
       const imagePath = uploadResponse.data.document.filePath;
-      
-      // Then update booking with confirmation image path
       const response = await umrahVisaAPI.uploadConfirmation(booking.id, imagePath);
 
       toast.success('Confirmation uploaded successfully! Status changed to Booking Success');
@@ -181,7 +166,6 @@ export default function TripInfoPage() {
 
   const renderActionButton = (booking: UmrahVisaBooking) => {
     if (booking.accommodationType === 'hotel') {
-      // Hotel bookings: Show Done button
       return (
         <Button
           size="sm"
@@ -201,73 +185,39 @@ export default function TripInfoPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50/50">
-        <div className="hidden lg:block">
-          <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-        </div>
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-64">
-            <Sidebar />
-          </SheetContent>
-        </Sheet>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading trip info...</p>
-          </div>
+      <div className="flex-1 flex items-center justify-center bg-gray-50/50 min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading trip info...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50/50 min-h-screen">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Trip Info Management</h1>
+            <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
+              Track and manage all Umrah visa trip information
+            </p>
+          </div>
+          <Button 
+            onClick={fetchBookings}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
+      {/* Content */}
       <div className="flex-1 overflow-auto">
-        {/* Header Bar */}
-        <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setMobileMenuOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Trip Info Management</h1>
-                <p className="text-xs lg:text-sm text-gray-500 mt-0.5">
-                  Track and manage all Umrah visa trip information
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={fetchBookings}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Content */}
         <div className="p-4 lg:p-8">
           <Card>
             <CardHeader>
@@ -401,7 +351,6 @@ export default function TripInfoPage() {
                                   {booking.groupNumber ? (
                                     <>
                                       {(() => {
-                                        // Parse multipleGroupDetails if available
                                         let groups: Array<{ groupNumber?: string; groupName?: string }> = [];
                                         if (booking.hasMultipleGroup && booking.multipleGroupDetails) {
                                           try {
@@ -413,7 +362,6 @@ export default function TripInfoPage() {
                                           }
                                         }
                                         
-                                        // If we have parsed groups, display them individually
                                         if (groups.length > 0) {
                                           const lastIndex = groups.length - 1;
                                           
@@ -443,7 +391,6 @@ export default function TripInfoPage() {
                                             </div>
                                           );
                                         } else {
-                                          // Fallback to original display
                                           return (
                                             <div className="text-xs text-gray-500 flex items-center gap-1">
                                               {booking.groupNumber} {booking.groupName ? `(${booking.groupName})` : ''}
@@ -481,7 +428,6 @@ export default function TripInfoPage() {
                                   {booking.groupNumber ? (
                                     <>
                                       {(() => {
-                                        // Parse multipleGroupDetails if available
                                         let groups: Array<{ groupNumber?: string; groupName?: string }> = [];
                                         if (booking.hasMultipleGroup && booking.multipleGroupDetails) {
                                           try {
@@ -493,7 +439,6 @@ export default function TripInfoPage() {
                                           }
                                         }
                                         
-                                        // If we have parsed groups, display them individually
                                         if (groups.length > 0) {
                                           const lastIndex = groups.length - 1;
                                           
@@ -523,7 +468,6 @@ export default function TripInfoPage() {
                                             </div>
                                           );
                                         } else {
-                                          // Fallback to original display
                                           return (
                                             <>
                                               <div className="text-sm font-medium text-indigo-600 flex items-center gap-1">
@@ -812,7 +756,6 @@ export default function TripInfoPage() {
                               )}
                             </TableCell>
 
-                            {/* Visa Provider (only for hotel tab) */}
                             {activeTab === 'hotel' && (
                               <TableCell>
                                 <div className="text-xs">
@@ -832,7 +775,6 @@ export default function TripInfoPage() {
                               </TableCell>
                             )}
 
-                            {/* Updated By */}
                             <TableCell>
                               <div className="space-y-1 text-xs">
                                 <div className="font-medium text-gray-900">
@@ -844,7 +786,6 @@ export default function TripInfoPage() {
                               </div>
                             </TableCell>
 
-                            {/* Booking Date (only for hotel tab) */}
                             {activeTab === 'hotel' && (
                               <TableCell>
                                 <div className="text-xs">
@@ -869,7 +810,6 @@ export default function TripInfoPage() {
                               </TableCell>
                             )}
 
-                            {/* Upload Image Column (only for iqama tab) */}
                             {activeTab === 'iqama' && (
                               <TableCell>
                                 <div className="space-y-2">
@@ -883,7 +823,6 @@ export default function TripInfoPage() {
                                       const file = e.target.files?.[0];
                                       if (file) {
                                         handleUploadConfirmation(booking, file);
-                                        // Reset input after upload
                                         e.target.value = '';
                                       }
                                     }}
@@ -893,7 +832,6 @@ export default function TripInfoPage() {
                               </TableCell>
                             )}
 
-                            {/* Status & Action */}
                             <TableCell>
                               <div className="flex items-center justify-between gap-3">
                                 <Badge className={`${UMRAH_VISA_STATUS_CONFIG.group_assigned.color} flex items-center gap-1 text-xs whitespace-nowrap`}>

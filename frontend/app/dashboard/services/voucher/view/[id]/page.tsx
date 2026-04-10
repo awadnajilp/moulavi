@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { voucherAPI } from '@/lib/api';
 import { toast } from 'sonner';
@@ -17,7 +16,6 @@ export default function ViewVoucherPage() {
   const voucherId = (params?.id as string) || '';
   const user = getUser();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [voucher, setVoucher] = useState<any>(null);
 
@@ -58,10 +56,7 @@ export default function ViewVoucherPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
+    <div className="flex-1 flex flex-col bg-gray-50/50">
       <div className="flex-1 overflow-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200">

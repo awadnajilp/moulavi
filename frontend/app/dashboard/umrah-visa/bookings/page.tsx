@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,15 +16,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { 
-  Menu, 
   Search, 
   RefreshCw,
   Eye,
   Edit, 
   Trash2,
+  PlusCircle,
+  Users,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
 import { getUser, hasRole } from '@/lib/auth';
 import { umrahVisaAPI } from '@/lib/api';
 import { UMRAH_VISA_STATUS_CONFIG, VISA_TYPE_CONFIG } from '@/lib/constants';
@@ -34,8 +34,6 @@ import ViewUmrahVisaDialog from '@/components/ViewUmrahVisaDialog';
 export default function UmrahVisaPage() {
   const router = useRouter();
   const user = getUser();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,33 +145,51 @@ export default function UmrahVisaPage() {
   const statusCounts = getStatusCounts();
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      <div className="hidden lg:block">
-        <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
-      </div>
-
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <Sidebar />
-        </SheetContent>
-      </Sheet>
-
+    <div className="flex-1 flex flex-col bg-gray-50/50">
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="sticky top-0 z-10 bg-white border-b px-4 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(true)}>
-                <Menu className="h-5 w-5" />
-              </Button>
               <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Umrah Visa Bookings</h1>
-                <p className="text-xs lg:text-sm text-gray-500 mt-0.5">Manage all Umrah visa bookings</p>
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 tracking-tight">Umrah Visa Bookings</h1>
+                <p className="text-xs lg:text-sm text-gray-500 mt-0.5 font-medium">Manage all Umrah visa bookings</p>
               </div>
             </div>
-            <Button onClick={fetchBookings} variant="outline" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh</span>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => router.push('/dashboard/umrah-visa/create-individual')}
+                className="flex items-center gap-2 font-bold"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Individual Booking
               </Button>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => router.push('/dashboard/umrah-visa/create-group')}
+                className="flex items-center gap-2 font-bold"
+              >
+                <Users className="h-4 w-4" />
+                Group Booking
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => router.push('/dashboard/umrah-visa/add-to-existing-booking')}
+                className="flex items-center gap-2 font-bold"
+              >
+                <UserPlus className="h-4 w-4" />
+                Add to Existing
+              </Button>
+              <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+              <Button onClick={fetchBookings} variant="outline" size="sm" className="flex items-center gap-2 font-bold">
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+            </div>
           </div>
         </div>
 

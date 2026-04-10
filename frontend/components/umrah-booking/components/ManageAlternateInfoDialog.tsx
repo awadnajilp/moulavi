@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plane, Building, Truck, Route, Save, Info, AlertCircle } from 'lucide-react';
+import { Loader2, Plane, Building, Truck, Route, Save, Info } from 'lucide-react';
 import { umrahVisaAPI, locationMasterAPI, cityMasterAPI, vehicleTypeMasterAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { TravelDetailsForm } from './TravelDetailsForm';
@@ -13,6 +13,7 @@ import { TransportVehicleSelectionStep } from '../steps/TransportVehicleSelectio
 import { MovementDetailsStep } from '../steps/MovementDetailsStep';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Airport, Location, Hotel as HotelType } from '@/lib/umrah/types';
 
 interface ManageAlternateInfoDialogProps {
   isOpen: boolean;
@@ -32,8 +33,10 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
   const [masterData, setMasterData] = useState<any>({
     airports: [],
     locations: [],
+    hotels: [],
     cities: [],
     vehicleTypes: [],
+    locationMasters: [],
   });
   const [loadingMaster, setLoadingMaster] = useState(false);
 
@@ -49,7 +52,12 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
     departureAirportId: '',
   });
 
-  const [hotelBookings, setHotelBookings] = useState<any[]>([]);
+  const [accommodationData, setAccommodationData] = useState<any>({
+    accommodationType: 'hotel',
+    hotelBookings: [],
+    iqamaDetails: {},
+  });
+
   const [transportBookings, setTransportBookings] = useState<any[]>([]);
   const [movementDetails, setMovementDetails] = useState<any[]>([]);
 
@@ -65,16 +73,44 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
       setLoadingMaster(true);
       const [airportsRes, locationsRes, citiesRes, vehiclesRes] = await Promise.all([
         locationMasterAPI.getActive({ locationType: 'AIRPORT' }),
-        locationMasterAPI.getAll(),
-        cityMasterAPI.getAll(),
-        vehicleTypeMasterAPI.getAll(),
+        locationMasterAPI.getActive(), 
+        cityMasterAPI.getActive(), 
+        vehicleTypeMasterAPI.getActive(), 
       ]);
 
+      const airportsRaw = airportsRes.data.locationMasters || (Array.isArray(airportsRes.data) ? airportsRes.data : []);
+      const locationsRaw = locationsRes.data.locationMasters || (Array.isArray(locationsRes.data) ? locationsRes.data : []);
+      const citiesRaw = citiesRes.data.cityMasters || (Array.isArray(citiesRes.data) ? citiesRes.data : []);
+      const vehicleTypes = vehiclesRes.data.data?.vehicleTypeMasters || (Array.isArray(vehiclesRes.data) ? vehiclesRes.data : []);
+
+      // Mappings for legacy components
+      const airports: Airport[] = airportsRaw.map((a: any) => ({
+        id: a.id,
+        airportCode: a.code,
+        airportName: a.name,
+      }));
+
+      const locations: Location[] = citiesRaw.map((c: any) => ({
+        id: c.id,
+        destinationName: c.name,
+      }));
+
+      const hotels: HotelType[] = locationsRaw
+        .filter((l: any) => l.locationType === 'HOTEL')
+        .map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          hotelName: l.name,
+          cityId: l.cityId,
+        }));
+
       setMasterData({
-        airports: airportsRes.data,
-        locations: locationsRes.data,
-        cities: citiesRes.data,
-        vehicleTypes: vehiclesRes.data,
+        airports,
+        locations,
+        hotels,
+        cities: citiesRaw,
+        vehicleTypes,
+        locationMasters: locationsRaw,
       });
     } catch (error) {
       console.error('Error loading master data:', error);
@@ -86,10 +122,10 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
 
   const initializeData = () => {
     // Find existing alternate info if any
-    const altTravel = booking.travelDetails?.find((t: any) => t.isAlternate);
-    const altHotels = booking.hotelBookings?.filter((h: any) => h.isAlternate) || [];
-    const altTransports = booking.transportBookings?.filter((t: any) => t.isAlternate) || [];
-    const altMovements = booking.movementDetails?.filter((m: any) => m.isAlternate) || [];
+    const altTravel = booking?.travelDetails?.find((t: any) => t.isAlternate);
+    const altHotels = booking?.hotelBookings?.filter((h: any) => h.isAlternate) || [];
+    const altTransports = booking?.transportBookings?.filter((t: any) => t.isAlternate) || [];
+    const altMovements = booking?.movementDetails?.filter((m: any) => m.isAlternate) || [];
 
     if (altTravel) {
       const arrival = new Date(altTravel.arrivalDateTime);
@@ -105,7 +141,6 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
         departureAirportId: altTravel.departureAirportId || '',
       });
     } else {
-      // Default to today
       const today = new Date().toISOString().split('T')[0];
       setTravelData({
         arrivalDate: today,
@@ -119,28 +154,47 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
       });
     }
 
-    setHotelBookings(altHotels.map((h: any) => ({
-      id: h.id,
-      cityId: h.cityId,
-      hotelId: h.hotelId,
-      checkInDate: h.checkInDate.split('T')[0],
-      checkOutDate: h.checkOutDate.split('T')[0],
-      brn: h.brn || '',
-    })));
+    setAccommodationData({
+      accommodationType: booking?.accommodationType || 'hotel',
+      hotelBookings: altHotels.map((h: any) => ({
+        id: h.id,
+        cityId: h.cityId,
+        hotelId: h.hotelId,
+        checkInDate: h.checkInDate.split('T')[0],
+        checkOutDate: h.checkOutDate.split('T')[0],
+        brn: h.brn || [],
+      })),
+      iqamaDetails: (() => {
+        const altIqama = booking?.sponsorIqamaDetails?.find((i: any) => i.isAlternate);
+        if (altIqama) {
+          return {
+            iqamaNumber: altIqama.iqamaNumber || '',
+            iqamaName: altIqama.iqamaSponserName || '',
+            iqamaDob: altIqama.sponserDob ? altIqama.sponserDob.split('T')[0] : '',
+            iqamaMobile: altIqama.sponserMobileNumber || '',
+            iqamaNationalShortAddress: altIqama.sponserNationalShortAddress || '',
+          };
+        }
+        return {};
+      })(), 
+    });
 
     setTransportBookings(altTransports.map((t: any) => ({
       id: t.id,
+      transportId: t.transportMasterId, // Map to transportId for the step component
       transportMasterId: t.transportMasterId,
       travelDateTime: t.travelDateTime,
+      quantity: 1, // Individual records in DB represent quantity 1
     })));
 
     setMovementDetails(altMovements.map((m: any) => ({
       id: m.id,
       travelDateTime: m.travelDateTime,
-      fromCityId: m.fromCityId,
       fromLocationId: m.fromLocationId,
-      toCityId: m.toCityId,
       toLocationId: m.toLocationId,
+      date: m.travelDateTime ? m.travelDateTime.split('T')[0] : '',
+      time: m.travelDateTime ? new Date(m.travelDateTime).toTimeString().slice(0, 5) : '12:00',
+      type: 'transport',
     })));
   };
 
@@ -148,9 +202,20 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
     try {
       setIsSaving(true);
       
-      // Combine travel date/time
       const arrivalDateTime = new Date(`${travelData.arrivalDate}T${travelData.arrivalTime}:00`).toISOString();
       const departureDateTime = new Date(`${travelData.departureDate}T${travelData.departureTime}:00`).toISOString();
+
+      // Expand transport bookings based on quantity
+      const expandedTransports: any[] = [];
+      transportBookings.forEach((t: any) => {
+        const qty = t.quantity || 1;
+        for (let i = 0; i < qty; i++) {
+          expandedTransports.push({
+            transportMasterId: t.transportId || t.transportMasterId,
+            travelDateTime: t.travelDateTime || arrivalDateTime,
+          });
+        }
+      });
 
       const payload = {
         travelDetails: {
@@ -161,25 +226,47 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
           departureAirportId: travelData.departureAirportId,
           departureFlightNumber: travelData.departureFlightNumber,
         },
-        hotelBookings: hotelBookings.map(h => ({
-          cityId: h.cityId,
-          hotelId: h.hotelId,
-          checkInDate: new Date(h.checkInDate).toISOString(),
-          checkOutDate: new Date(h.checkOutDate).toISOString(),
-          brn: h.brn,
-        })),
-        transportBookings: transportBookings.map(t => ({
-          transportMasterId: t.transportMasterId,
-          travelDateTime: t.travelDateTime,
-        })),
-        movementDetails: movementDetails.map(m => ({
-          travelDateTime: new Date(m.travelDateTime).toISOString(),
-          fromCityId: m.fromCityId,
-          fromLocationId: m.fromLocationId,
-          toCityId: m.toCityId,
-          toLocationId: m.toLocationId,
-        })),
+        hotelBookings: accommodationData.accommodationType === 'hotel' 
+          ? accommodationData.hotelBookings.map((h: any) => ({
+              cityId: h.cityId,
+              hotelId: h.hotelId,
+              checkInDate: new Date(h.checkInDate).toISOString(),
+              checkOutDate: new Date(h.checkOutDate).toISOString(),
+              brn: h.brn,
+            }))
+          : [],
+        transportBookings: expandedTransports,
+        movementDetails: movementDetails
+          .filter((m: any) => m.fromLocationId && m.toLocationId) 
+          .map(m => {
+            let travelDateTime = m.travelDateTime;
+            if (m.date && m.time) {
+              try {
+                travelDateTime = new Date(`${m.date}T${m.time}:00`).toISOString();
+              } catch (e) {
+                travelDateTime = new Date().toISOString();
+              }
+            }
+            
+            const fromLoc = masterData.locationMasters.find((l: any) => l.id === m.fromLocationId);
+            const toLoc = masterData.locationMasters.find((l: any) => l.id === m.toLocationId);
+
+            return {
+              travelDateTime: travelDateTime || new Date().toISOString(),
+              fromCityId: fromLoc?.cityId || '',
+              fromLocationId: m.fromLocationId,
+              toCityId: toLoc?.cityId || '',
+              toLocationId: m.toLocationId,
+            };
+          }),
+        iqamaDetails: accommodationData.accommodationType === 'iqama' ? accommodationData.iqamaDetails : null,
       };
+
+      if (payload.movementDetails.length > 0 && payload.movementDetails.some(m => !m.fromCityId || !m.toCityId)) {
+        toast.error('Some movement details are missing city information. Please check your selections.');
+        setIsSaving(false);
+        return;
+      }
 
       await umrahVisaAPI.updateAlternateInfo(booking.id, payload);
       toast.success('Alternate booking information updated successfully');
@@ -192,8 +279,8 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
     }
   };
 
-  const getHotelsForLocation = (locationId: string) => {
-    return masterData.locations.filter((loc: any) => loc.cityId === locationId && loc.locationType === 'HOTEL');
+  const getHotelsForLocation = (cityId: string) => {
+    return (masterData.hotels || []).filter((h: any) => h.cityId === cityId);
   };
 
   return (
@@ -244,7 +331,7 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
                   <TravelDetailsForm 
                     data={travelData} 
                     onChange={(newData) => setTravelData({ ...travelData, ...newData })}
-                    airports={masterData.airports}
+                    airports={masterData.airports || []}
                   />
                 </CardContent>
               </Card>
@@ -253,36 +340,16 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
             <TabsContent value="stay" className="space-y-4">
               <div className="bg-white border rounded-lg p-1">
                 <AccommodationStep 
-                  data={{ accommodationType: 'hotel', hotelBookings: hotelBookings } as any} 
-                  onChange={(newData: any) => {
-                    if (newData.hotelBookings) {
-                      setHotelBookings(newData.hotelBookings);
-                    }
-                  }} 
-                  locations={masterData.cities} 
-                  hotels={masterData.locations.filter((l: any) => l.locationType === 'HOTEL')}
+                  data={accommodationData as any} 
+                  onChange={(newData: any) => setAccommodationData({ ...accommodationData, ...newData })} 
+                  locations={masterData.locations || []} 
+                  hotels={masterData.hotels || []}
                   arrivalDate={travelData.arrivalDate}
                   departureDate={travelData.departureDate}
                   getHotelsForLocation={getHotelsForLocation}
                   onLoadHotels={async () => {}}
+                  passengerCount={booking?.passengerCount}
                 />
-                
-                {/* Manual display of bookings as the Step component is designed for creation flow */}
-                <div className="mt-4 px-4 pb-4">
-                  <h4 className="text-sm font-semibold mb-2">Alternate Hotels ({hotelBookings.length})</h4>
-                  <div className="space-y-2">
-                    {hotelBookings.map((h, idx) => (
-                      <div key={h.id || idx} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
-                        <div className="text-sm">
-                          <span className="font-medium">{masterData.cities.find((c: any) => c.id === h.cityId)?.name}</span> - 
-                          <span> {masterData.locations.find((l: any) => l.id === h.hotelId)?.name}</span>
-                          <div className="text-xs text-gray-500">{h.checkInDate} to {h.checkOutDate}</div>
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setHotelBookings(hotelBookings.filter((_, i) => i !== idx))}>Remove</Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </TabsContent>
 
@@ -292,20 +359,24 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
                   data={{ 
                     selectedTransports: transportBookings.map(t => ({ 
                       ...t, 
-                      transportMaster: masterData.locations.find((l: any) => l.id === t.transportMasterId) 
+                      transportMaster: (masterData.locationMasters || []).find((l: any) => l.id === t.transportMasterId) 
                     })),
                   } as any}
-                  step1Data={{} as any}
+                  step1Data={{ passengerCount: booking?.passengerCount } as any}
                   step2Data={{ 
                     arrivalDate: travelData.arrivalDate,
                     departureDate: travelData.departureDate,
+                    arrivalAirportId: travelData.arrivalAirportId,
+                    departureAirportId: travelData.departureAirportId,
+                    hotelBookings: accommodationData.hotelBookings,
                   } as any}
+                  step3Data={accommodationData as any} // For Iqama check
                   onChange={(newData: any) => {
                     if (newData.selectedTransports) {
                       setTransportBookings(newData.selectedTransports);
                     }
                   }}
-                  locationMasters={masterData.locations}
+                  locationMasters={masterData.locationMasters || []}
                 />
               </div>
             </TabsContent>
@@ -321,15 +392,14 @@ export const ManageAlternateInfoDialog: React.FC<ManageAlternateInfoDialogProps>
                       setMovementDetails(newData.movements);
                     }
                   }}
-                  locationMasters={masterData.locations}
-                  locations={masterData.locations}
-                  hotelBookings={hotelBookings.map(h => ({
-                    ...h,
-                    hotel: masterData.locations.find((l: any) => l.id === h.hotelId),
-                    city: masterData.cities.find((c: any) => c.id === h.cityId)
-                  }))}
+                  locationMasters={masterData.locationMasters || []}
+                  locations={masterData.locationMasters || []}
+                  hotelBookings={accommodationData.hotelBookings}
+                  step3Data={accommodationData as any} // Pass accommodation data for Iqama logic
                   arrivalDate={travelData.arrivalDate}
                   departureDate={travelData.departureDate}
+                  arrivalTime={travelData.arrivalTime}
+                  departureTime={travelData.departureTime}
                   arrivalAirportId={travelData.arrivalAirportId}
                   departureAirportId={travelData.departureAirportId}
                 />
