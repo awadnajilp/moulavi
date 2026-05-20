@@ -9,7 +9,8 @@ dotenv.config();
 
 // Email configuration constants
 const EMAIL_CONFIG = {
-  from: '"Moulavi ERP System" <info@moulavi.in>',
+  from: '"Moulavi Travels" <info@moulavi.com>',
+  adminEmail: 'info@moulavi.com',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 } as const;
 
@@ -18,12 +19,12 @@ const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== 'false';
 
 // SMTP transporter configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
+  host: process.env.SMTP_HOST || 'smtp.bizmail.yahoo.com',
+  port: parseInt(process.env.SMTP_PORT || '465'),
+  secure: process.env.SMTP_SECURE === 'true' || (process.env.SMTP_PORT === '465' || !process.env.SMTP_PORT),
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.SMTP_USER || 'info@moulavi.com',
+    pass: process.env.SMTP_PASSWORD || 'swokfyqwqpttwcvq',
   },
   // Mandrill specific configuration
   ...(process.env.SMTP_HOST === 'smtp.mandrillapp.com' && {
@@ -36,6 +37,100 @@ const transporter = nodemailer.createTransport({
 
 // Email templates
 const EMAIL_TEMPLATES = {
+  registrationThankYou: (name: string) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Thank You for Registering - Moulavi Travels</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { background: #065f46; color: white; padding: 40px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+        .content { padding: 30px; }
+        .greeting { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #065f46; }
+        .message { font-size: 16px; color: #555; margin-bottom: 30px; }
+        .info-box { background: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; border-radius: 4px; margin-bottom: 30px; }
+        .footer { background: #1e293b; color: #cbd5e1; padding: 20px; text-align: center; font-size: 12px; }
+        .footer p { margin: 5px 0; }
+        .cta-text { font-weight: 600; color: #065f46; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>NuSync Gateway Registration</h1>
+        </div>
+        <div class="content">
+          <div class="greeting">Assalamu Alaikum ${name},</div>
+          <div class="message">
+            Thank you for requesting access to the NuSync Umrah Gateway by Moulavi Travels. We have received your agency registration details.
+          </div>
+          <div class="info-box">
+            <p><strong>What's next?</strong></p>
+            <p>Our onboarding team is currently reviewing your application. Once verified (usually within 24 hours), you will receive your secure login credentials via WhatsApp and Email.</p>
+          </div>
+          <p class="message">
+            We look forward to a fruitful cooperation and to being your trusted partner in serving the guests of the Kingdom.
+          </p>
+          <p class="cta-text">Moulavi Travel & Rec Agent<br>Reg ID: 22282 · Season 1447 Hijri</p>
+        </div>
+        <div class="footer">
+          <p>© 2025 Moulavi Travels. All rights reserved.</p>
+          <p>info@moulavi.com | +91 9867650044</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+
+  registrationAdminNotification: (details: any) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>New Agency Registration - NuSync</title>
+      <style>
+        body { font-family: sans-serif; line-height: 1.5; color: #333; }
+        .container { max-width: 600px; margin: 20px auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        h2 { color: #065f46; border-bottom: 2px solid #065f46; padding-bottom: 10px; }
+        .detail-row { margin-bottom: 10px; display: flex; }
+        .label { font-weight: bold; width: 180px; color: #666; }
+        .value { flex: 1; }
+        .section-title { background: #f3f4f6; padding: 5px 10px; font-weight: bold; margin: 20px 0 10px 0; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>New Gateway Access Request</h2>
+        <p>A new agency has registered on the NuSync landing page.</p>
+        
+        <div class="section-title">Agency Details</div>
+        <div class="detail-row"><div class="label">Agency Name:</div><div class="value">${details.party_name}</div></div>
+        <div class="detail-row"><div class="label">Agency Code:</div><div class="value">${details.party_code || 'N/A'}</div></div>
+        <div class="detail-row"><div class="label">Email:</div><div class="value">${details.email}</div></div>
+        <div class="detail-row"><div class="label">WhatsApp:</div><div class="value">${details.whatsapp_number}</div></div>
+        <div class="detail-row"><div class="label">Office Contact:</div><div class="value">${details.contact_number || 'N/A'}</div></div>
+        <div class="detail-row"><div class="label">Address:</div><div class="value">${details.address || 'N/A'}</div></div>
+        
+        <div class="section-title">Primary Contact</div>
+        <div class="detail-row"><div class="label">Contact Name:</div><div class="value">${details.contact_name}</div></div>
+        <div class="detail-row"><div class="label">Contact Number:</div><div class="value">${details.contact_person_number}</div></div>
+        <div class="detail-row"><div class="label">Department:</div><div class="value">${details.department || 'N/A'}</div></div>
+        
+        <div class="section-title">Account Setup</div>
+        <div class="detail-row"><div class="label">Currency:</div><div class="value">${details.account_currency_id}</div></div>
+        <div class="detail-row"><div class="label">Customer Type:</div><div class="value">${details.customer_type}</div></div>
+        <div class="detail-row"><div class="label">GST Number:</div><div class="value">${details.gst_number || 'N/A'}</div></div>
+        <div class="detail-row"><div class="label">PAN Number:</div><div class="value">${details.pan_number || 'N/A'}</div></div>
+        
+        <p style="margin-top: 30px; font-size: 12px; color: #888;">Submitted at: ${new Date().toLocaleString()}</p>
+      </div>
+    </body>
+    </html>
+  `,
   credentials: (name: string, email: string, password: string, frontendUrl: string) => `
     <!DOCTYPE html>
     <html>
@@ -907,5 +1002,43 @@ export const sendIqamaConfirmationEmail = async (
   }
   
   console.log('[EMAIL] ✅ sendIqamaConfirmationEmail completed successfully');
+};
+
+// Send Thank You email to customer after landing page registration
+export const sendLandingRegistrationThankYouEmail = async (
+  to: string,
+  name: string
+): Promise<void> => {
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: EMAIL_CONFIG.from,
+    to,
+    subject: 'Thank you for registering with NuSync — Moulavi Travels',
+    html: EMAIL_TEMPLATES.registrationThankYou(name),
+  };
+
+  try {
+    await sendEmail(mailOptions);
+  } catch (error: any) {
+    console.error('[EMAIL] ❌ sendLandingRegistrationThankYouEmail failed:', error?.message);
+    // Don't re-throw to avoid breaking the registration process if email fails
+  }
+};
+
+// Send notification email to admin after new landing page registration
+export const sendLandingRegistrationAdminNotificationEmail = async (
+  details: any
+): Promise<void> => {
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: EMAIL_CONFIG.from,
+    to: EMAIL_CONFIG.adminEmail,
+    subject: `New Gateway Access Request: ${details.party_name}`,
+    html: EMAIL_TEMPLATES.registrationAdminNotification(details),
+  };
+
+  try {
+    await sendEmail(mailOptions);
+  } catch (error: any) {
+    console.error('[EMAIL] ❌ sendLandingRegistrationAdminNotificationEmail failed:', error?.message);
+  }
 };
 

@@ -754,3 +754,29 @@ enum PricingType {
   umrah
   others
 }
+
+model LandingRegistration {
+  id                  String   @id @default(uuid())
+  partyName           String   @map("party_name")
+  partyCode           String?  @map("party_code")
+  email               String
+  whatsappNumber      String   @map("whatsapp_number")
+  contactNumber       String?  @map("contact_number")
+  address             String?
+  contactName         String?  @map("contact_name")
+  contactPersonNumber String?  @map("contact_person_number")
+  department          String?
+  gstNumber           String?  @map("gst_number")
+  panNumber           String?  @map("pan_number")
+  aadhaarNumber       String?  @map("aadhaar_number")
+  accountCurrencyId   String   @map("account_currency_id")
+  customerType        String   @map("customer_type")
+  loginRequired       Boolean  @default(false) @map("login_required")
+  emailNotification   Boolean  @default(true) @map("email_notification")
+  smsNotification     Boolean  @default(true) @map("sms_notification")
+  status              String   @default("pending")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("landing_registrations")
+}

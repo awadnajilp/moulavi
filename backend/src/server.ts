@@ -27,6 +27,7 @@ import transportMasterRoutes from './routes/transportMaster.routes';
 import pricingMasterRoutes from './routes/pricingMaster.routes';
 import cancellationRoutes from './routes/cancellation.routes';
 import notificationRoutes from './routes/notifications.routes';
+import landingRoutes from './routes/landing.routes';
 
 // Load environment variables from .env file in the backend directory
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -118,6 +119,7 @@ app.use('/api/transport-masters', transportMasterRoutes);
 app.use('/api/pricing-masters', pricingMasterRoutes);
 app.use('/api/cancellation', cancellationRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/landing', landingRoutes);
 
 // Error handlers
 app.use(notFoundHandler);

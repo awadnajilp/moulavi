@@ -1122,24 +1122,45 @@
     const btnSpinner = document.getElementById('btnSpinner');
     const successMsg = document.getElementById('successMsg');
 
-    // Simulate loading
+    // Show loading
     btn.disabled = true;
     btn.style.opacity = '0.8';
     btnIcon.classList.add('hidden');
     btnSpinner.classList.remove('hidden');
     btnText.textContent = 'Registering Agency…';
 
-    setTimeout(() => {
-      // ----------------------------------------------------------------------
-      // INTEGRATION POINT:
-      // This is where the registration payload would be sent to the main system.
-      // Once the party is created, the system should trigger the Email/WhatsApp 
-      // credentials message. 
-      // ----------------------------------------------------------------------
-      
-      btn.classList.add('hidden');
-      successMsg.classList.remove('hidden');
-    }, 1800);
+    // API Integration
+    const API_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:5000/api/landing/register' 
+      : '/api/landing/register';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        btn.classList.add('hidden');
+        successMsg.classList.remove('hidden');
+        successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        throw new Error(data.message || 'Registration failed');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Registration failed: ' + error.message);
+      // Reset button
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btnIcon.classList.remove('hidden');
+      btnSpinner.classList.add('hidden');
+      btnText.textContent = 'Complete Agency Registration';
+    });
   }
 
   // Intersection observer for scroll animations
