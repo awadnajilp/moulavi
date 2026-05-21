@@ -3,7 +3,7 @@
 This document serves as the foundational reference for the Moulavi ERP project. It captures the system architecture, deployment configuration, and critical operational mandates.
 
 ## 🚀 Deployment Overview
-- **Domain:** [https://umrasystem.skyerp.app](https://umrasystem.skyerp.app)
+- **Domain:** [https://umra.moulavi.in](https://umra.moulavi.in)
 - **Server IP:** `64.227.158.41`
 - **Internal Stack:**
   - **Apache:** Front-facing reverse proxy handling SSL (Certbot).

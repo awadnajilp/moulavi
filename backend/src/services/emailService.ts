@@ -323,7 +323,7 @@ const EMAIL_TEMPLATES = {
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
             <p><strong>Questions or Concerns?</strong></p>
             <p>Our dedicated support team is here to help you every step of the way.</p>
-            <p>📧 Email: support@moulavi.in | 📞 Phone: +91-XXX-XXX-XXXX</p>
+            <p>📧 Email: Info@moulavi.com | 📞 Phone: +91-XXX-XXX-XXXX</p>
           </div>
         </div>
         

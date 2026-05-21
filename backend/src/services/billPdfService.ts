@@ -362,7 +362,7 @@ function generateBillHTML(data: BillPdfData): string {
         <div class="company-name">Moulavi ERP</div>
         <div class="company-details">
           Umrah Visa Services<br>
-          Email: info@moulavi.in<br>
+          Email: Info@moulavi.com<br>
           Phone: +91-XXXXXXXXXX
         </div>
       </div>
@@ -448,7 +448,7 @@ function generateBillHTML(data: BillPdfData): string {
         This is a computer-generated invoice. No signature required.
       </div>
       <div class="footer-terms">
-        <strong>Payment Terms:</strong> Payment is due within the agreed terms. For any queries regarding this invoice, please contact us at info@moulavi.in
+        <strong>Payment Terms:</strong> Payment is due within the agreed terms. For any queries regarding this invoice, please contact us at Info@moulavi.com
       </div>
     </div>
   </div>

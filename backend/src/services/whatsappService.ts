@@ -44,7 +44,7 @@ Welcome to Moulavi ERP! Your account has been successfully created.
 
 🌐 *Login Link:* ${frontendUrl}/
 
-📞 *Support:* support@moulavi.in
+📞 *Support:* Info@moulavi.com
 📱 *Phone:* +91-XXX-XXX-XXXX
 
 Thank you for choosing Moulavi ERP!
@@ -70,7 +70,7 @@ Your ${serviceType} service request has been successfully submitted!
 ✓ Support assistance
 
 📞 *Need Help?*
-📧 Email: support@moulavi.in
+📧 Email: Info@moulavi.com
 📱 Phone: +91-XXX-XXX-XXXX
 
 Thank you for choosing Moulavi ERP!
