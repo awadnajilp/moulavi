@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NuSync — The Compliance Bridge for Umrah Visa Processing</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          emerald: {
+            950: '#022c22', 900: '#034d34', 800: '#065f46',
+            700: '#047857', 600: '#059669', 500: '#10b981',
+            400: '#34d399', 200: '#a7f3d0', 100: '#d1fae5',
+          },
+          slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' },
+          gold: { 400: '#d4a843', 300: '#e8c76a', 200: '#f5e4a8' }
+        },
+        fontFamily: {
+          display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+          body: ['"IBM Plex Sans"', 'sans-serif'],
+          mono: ['"IBM Plex Mono"', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  * { font-family: 'IBM Plex Sans', sans-serif; }
+  .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .font-mono-custom { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Islamic Geometric Pattern */
+  .geo-bg {
+    background-color: #022c22;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23065f46' stroke-width='0.6' opacity='0.7'%3E%3Crect x='10' y='10' width='60' height='60' transform='rotate(45 40 40)'/%3E%3Crect x='20' y='20' width='40' height='40'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3Cline x1='40' y1='0' x2='40' y2='80'/%3E%3Cline x1='0' y1='40' x2='80' y2='40'/%3E%3Cline x1='0' y1='0' x2='80' y2='80'/%3E%3Cline x1='80' y1='0' x2='0' y2='80'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 80px 80px;
+  }
+
+  .geo-bg-light {
+    background-color: #f8fafc;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' stroke='%23065f46' stroke-width='0.3' opacity='0.18'%3E%3Crect x='8' y='8' width='44' height='44' transform='rotate(45 30 30)'/%3E%3Crect x='15' y='15' width='30' height='30'/%3E%3Ccircle cx='30' cy='30' r='15'/%3E%3Cline x1='30' y1='0' x2='30' y2='60'/%3E%3Cline x1='0' y1='30' x2='60' y2='30'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 60px;
+  }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.3); } 50% { box-shadow: 0 0 0 10px rgba(5, 150, 105, 0); } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+  .anim-fade-up { animation: fadeUp 0.7s ease forwards; }
+  .anim-fade-up-2 { animation: fadeUp 0.7s 0.15s ease both; }
+  .anim-fade-up-3 { animation: fadeUp 0.7s 0.3s ease both; }
+  .anim-fade-up-4 { animation: fadeUp 0.7s 0.45s ease both; }
+  .anim-fade-in { animation: fadeIn 1s 0.6s ease both; }
+
+  .badge-pulse { animation: pulse-ring 2.5s ease-in-out infinite; }
+
+  /* Gold shimmer CTA */
+  .cta-shimmer {
+    background: linear-gradient(90deg, #d4a843 0%, #e8c76a 40%, #d4a843 60%, #b8892e 100%);
+    background-size: 200% auto;
+    animation: shimmer 3s linear infinite;
+    color: #022c22;
+  }
+  .cta-shimmer:hover { filter: brightness(1.08); transform: translateY(-1px); transition: all 0.2s; }
+
+  /* Step connector line */
+  .step-line::after {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: calc(50% + 32px);
+    width: calc(100% - 64px);
+    height: 1px;
+    background: linear-gradient(90deg, #065f46, transparent);
+    pointer-events: none;
+  }
+
+  /* Form focus ring */
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+  }
+
+  /* Stat card */
+  .stat-card {
+    border: 1px solid rgba(5, 150, 105, 0.3);
+    background: rgba(6, 95, 70, 0.15);
+    backdrop-filter: blur(6px);
+  }
+
+  /* Feature card hover */
+  .feature-card {
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  }
+  .feature-card:hover {
+    border-color: #059669;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(6, 95, 70, 0.1);
+  }
+
+  /* Nav border scroll effect handled by JS below */
+  .nav-scrolled { border-bottom: 1px solid rgba(6, 95, 70, 0.4); background: rgba(2, 44, 34, 0.97); backdrop-filter: blur(12px); }
+
+  /* Mobile nav */
+  #mobile-menu { display: none; }
+  #mobile-menu.open { display: flex; }
+
+  /* Checkbox custom */
+  input[type="checkbox"] { accent-color: #059669; }
+
+  /* Select arrow */
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; -webkit-appearance: none; }
+
+  /* Decorative separator */
+  .sep-geo {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #065f46, #d4a843, #065f46, transparent);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body class="bg-white text-slate-800 antialiased">
+
+<!-- ─── NAVIGATION ─────────────────────────────────────────────────────── -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-4 px-6 lg:px-12">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center shadow-lg">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M3 10 Q10 3 17 10 Q10 17 3 10Z" fill="none" stroke="#d4a843" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="3" fill="#d4a843"/>
+          <line x1="10" y1="3" x2="10" y2="7" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+          <line x1="10" y1="13" x2="10" y2="17" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+          <line x1="3" y1="10" x2="7" y2="10" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+          <line x1="13" y1="10" x2="17" y2="10" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+        </svg>
+      </div>
+      <div>
+        <span class="font-display font-bold text-xl text-white tracking-wide">NuSync</span>
+        <span class="hidden sm:block text-xs text-emerald-400 font-mono-custom tracking-widest -mt-0.5">by Moulavi Travels</span>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#how-it-works" class="text-sm text-emerald-200 hover:text-white transition-colors font-body">How It Works</a>
+      <a href="#features" class="text-sm text-emerald-200 hover:text-white transition-colors font-body">Features</a>
+      <a href="/login" class="text-sm text-emerald-200 hover:text-white transition-colors font-body font-semibold">Agent Login</a>
+      <a href="#register" class="cta-shimmer text-sm font-semibold px-5 py-2.5 rounded-lg shadow-lg">Request Access</a>
+    </div>
+    <button id="hamburger" class="md:hidden text-emerald-300 focus:outline-none" aria-label="Open menu">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="flex-col md:hidden mt-4 px-2 pb-4 gap-3">
+    <a href="#how-it-works" class="block text-sm text-emerald-200 hover:text-white py-2 border-b border-emerald-900">How It Works</a>
+    <a href="#features" class="block text-sm text-emerald-200 hover:text-white py-2 border-b border-emerald-900">Features</a>
+    <a href="/login" class="block text-sm text-emerald-200 hover:text-white py-2 border-b border-emerald-900 font-semibold">Agent Login</a>
+    <a href="#register" class="cta-shimmer text-sm font-semibold px-5 py-2.5 rounded-lg text-center mt-2">Request Access</a>
+  </div>
+</nav>
+
+<!-- ─── HERO SECTION ─────────────────────────────────────────────────────── -->
+<section class="geo-bg min-h-screen flex flex-col justify-center relative overflow-hidden">
+
+  <!-- Top vignette -->
+  <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/60 via-transparent to-emerald-950/80 pointer-events-none"></div>
+
+  <!-- Decorative crescent arc -->
+  <div class="absolute right-0 top-0 h-full w-1/2 pointer-events-none opacity-[0.04]">
+    <svg viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-full ml-auto">
+      <circle cx="350" cy="400" r="320" stroke="white" stroke-width="0.8"/>
+      <circle cx="420" cy="370" r="270" stroke="white" stroke-width="0.6"/>
+      <circle cx="280" cy="400" r="200" stroke="#d4a843" stroke-width="0.5"/>
+      <path d="M 100 50 L 380 400 L 100 750" stroke="white" stroke-width="0.4"/>
+    </svg>
+  </div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 pt-28 pb-20">
+
+    <!-- Trust badge -->
+    <div class="anim-fade-up inline-flex items-center gap-2 bg-emerald-800/50 border border-emerald-600/40 rounded-full px-4 py-1.5 mb-8">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 badge-pulse"></span>
+      <span class="font-mono-custom text-xs text-emerald-300 tracking-wider uppercase">Reg ID: 22282 · Season 1447 Hijri</span>
+    </div>
+
+    <div class="max-w-4xl">
+      <!-- Headline -->
+      <h1 class="font-display font-bold text-white leading-[1.1] mb-6 anim-fade-up-2">
+        <span class="block text-5xl sm:text-6xl lg:text-7xl">Authorized Umrah Gateway</span>
+        <span class="block text-5xl sm:text-6xl lg:text-7xl text-gold-300 italic mt-1">Moulavi Travel & Rec Agent.</span>
+      </h1>
+
+      <!-- Subheadline -->
+      <p class="text-emerald-100/80 text-lg sm:text-xl max-w-2xl leading-relaxed mb-4 anim-fade-up-3">
+        NuSync is the high-compliance infrastructure that lets travel agencies worldwide submit Umrah group applications through our authorized gateway — with <strong class="text-white font-semibold">zero rejections, automated vouchers, and real-time tracking.</strong>
+      </p>
+
+      <!-- Value bar -->
+      <div class="flex flex-wrap gap-4 text-sm text-emerald-300 mb-10 anim-fade-up-3">
+        <span class="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#10b981" stroke-width="1.2"/><path d="M4 7l2 2 4-4" stroke="#10b981" stroke-width="1.2" stroke-linecap="round"/></svg>
+          100% Pre-Submission Validation
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#10b981" stroke-width="1.2"/><path d="M4 7l2 2 4-4" stroke="#10b981" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Instant WhatsApp Vouchers
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#10b981" stroke-width="1.2"/><path d="M4 7l2 2 4-4" stroke="#10b981" stroke-width="1.2" stroke-linecap="round"/></svg>
+          No KSA License Required
+        </span>
+      </div>
+
+      <!-- CTAs -->
+      <div class="flex flex-col sm:flex-row gap-4 anim-fade-up-4">
+        <a href="#register" class="cta-shimmer text-center font-semibold px-8 py-4 rounded-xl text-base shadow-2xl inline-flex items-center justify-center gap-2">
+          Request Gateway Access
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9h10M10 5l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </a>
+        <a href="#how-it-works" class="border border-emerald-600 text-emerald-300 hover:bg-emerald-800/30 text-center font-medium px-8 py-4 rounded-xl text-base transition-colors inline-flex items-center justify-center gap-2">
+          Watch Flow Demo
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="anim-fade-in grid grid-cols-2 sm:grid-cols-4 gap-4 mt-16 max-w-3xl">
+      <div class="stat-card rounded-xl p-4 text-center">
+        <div class="font-mono-custom text-2xl font-bold text-gold-400">0%</div>
+        <div class="text-emerald-300 text-xs mt-1 uppercase tracking-widest">Rejection Rate</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center">
+        <div class="font-mono-custom text-2xl font-bold text-gold-400">24/7</div>
+        <div class="text-emerald-300 text-xs mt-1 uppercase tracking-widest">Auto-Validation</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center">
+        <div class="font-mono-custom text-2xl font-bold text-gold-400">99.9%</div>
+        <div class="text-emerald-300 text-xs mt-1 uppercase tracking-widest">Uptime</div>
+      </div>
+      <div class="stat-card rounded-xl p-4 text-center">
+        <div class="font-mono-custom text-2xl font-bold text-gold-400">Moulavi</div>
+        <div class="text-emerald-300 text-xs mt-1 uppercase tracking-widest">Since 1998</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom wave -->
+  <div class="absolute bottom-0 left-0 right-0">
+    <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M0 60V30C240 0 480 60 720 30C960 0 1200 60 1440 30V60H0Z" fill="white"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ─── TRUST LOGOS BAR ────────────────────────────────────────────────── -->
+<section class="bg-white py-10 px-6 lg:px-12">
+  <div class="max-w-5xl mx-auto">
+    <p class="text-center text-sm font-mono-custom text-slate-400 uppercase tracking-widest mb-8">Trusted by 500+ Global Travel Partners</p>
+    <div class="flex flex-wrap justify-center items-center gap-8 sm:gap-14 opacity-60">
+      <div class="flex items-center gap-2 text-emerald-800 font-display font-semibold text-lg">
+        <div class="w-7 h-7 rounded bg-emerald-800 flex items-center justify-center">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="10" height="10" rx="1.5" stroke="white" stroke-width="1.2"/><path d="M5 7l1.5 1.5L9 5" stroke="white" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>NUSUK Direct Gateway
+      </div>
+      <div class="flex items-center gap-2 text-slate-600 font-semibold text-sm">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        KSA Ministry of Hajj & Umrah Verified
+      </div>
+      <div class="flex items-center gap-2 text-slate-600 font-semibold text-sm">
+        <div class="w-2 h-2 rounded-full bg-gold-400"></div>
+        ISO 27001 Data Infrastructure
+      </div>
+      <div class="flex items-center gap-2 text-slate-600 font-semibold text-sm">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        Moulavi Travels Ecosystem
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep-geo mx-auto max-w-4xl"></div>
+
+<!-- ─── HOW IT WORKS ───────────────────────────────────────────────────── -->
+<section id="how-it-works" class="py-24 px-6 lg:px-12 bg-white">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-16">
+      <span class="font-mono-custom text-xs text-emerald-600 uppercase tracking-widest">Seamless Onboarding</span>
+      <h2 class="font-display font-bold text-4xl sm:text-5xl text-slate-800 mt-3">
+        The NuSync Bridge Flow
+      </h2>
+      <p class="text-slate-500 mt-4 max-w-xl mx-auto text-base">From agency registration to visa issuance, we've automated the friction out of Umrah logistics.</p>
+    </div>
+
+    <!-- Steps -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+
+      <!-- Step 1 -->
+      <div class="relative text-center">
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-800 flex items-center justify-center mb-6 shadow-lg">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M14 4C8.477 4 4 8.477 4 14s4.477 10 10 10 10-4.477 10-10S19.523 4 14 4z" stroke="#d4a843" stroke-width="1.5"/>
+              <path d="M10 14l3 3 5-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="font-mono-custom text-xs text-emerald-500 uppercase tracking-widest mb-2">Step 01</div>
+          <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Onboard Your Agency</h3>
+          <p class="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">Submit your agency details and get approved. Receive your secure credentials via WhatsApp instantly.</p>
+        </div>
+        <!-- Connector arrow for desktop -->
+        <div class="hidden md:block absolute top-8 left-full w-8 z-10">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M4 16 C 10 8, 22 8, 28 16" stroke="#065f46" stroke-width="1" stroke-dasharray="3,3"/>
+            <path d="M24 13l4 3-4 3" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative text-center">
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-800 flex items-center justify-center mb-6 shadow-lg border-2 border-gold-400/60">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="5" y="5" width="18" height="18" rx="3" stroke="#d4a843" stroke-width="1.5"/>
+              <path d="M9 12h10M9 16h7" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M9 8.5v11" stroke="#d4a843" stroke-width="1" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="font-mono-custom text-xs text-emerald-500 uppercase tracking-widest mb-2">Step 02</div>
+          <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Upload Group Data</h3>
+          <p class="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">Upload pilgrim passports and travel details. Our engine validates every field against NUSUK rules in real-time.</p>
+        </div>
+        <div class="hidden md:block absolute top-8 left-full w-8 z-10">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M4 16 C 10 8, 22 8, 28 16" stroke="#065f46" stroke-width="1" stroke-dasharray="3,3"/>
+            <path d="M24 13l4 3-4 3" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative text-center">
+        <div class="flex flex-col items-center">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-800 flex items-center justify-center mb-6 shadow-lg">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <path d="M7 14l4 4 10-10" stroke="#d4a843" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 6h20v16a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" stroke="white" stroke-width="1.2" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="font-mono-custom text-xs text-emerald-500 uppercase tracking-widest mb-2">Step 03</div>
+          <h3 class="font-display font-bold text-xl text-slate-800 mb-3">Sync & Get Vouchers</h3>
+          <p class="text-slate-500 text-sm leading-relaxed max-w-xs mx-auto">Once issued, the system generates professional vouchers and notifies your team. No manual data entry required.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Zero-rejection callout -->
+    <div class="mt-16 bg-emerald-950 rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-6">
+      <div class="w-12 h-12 rounded-xl bg-emerald-800 flex items-center justify-center flex-shrink-0 border border-gold-400/30">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M11 2L4 6v5c0 4.4 3 8.5 7 9.5 4-1 7-5.1 7-9.5V6l-7-4z" stroke="#d4a843" stroke-width="1.5" fill="none"/>
+          <path d="M8 11l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-display font-semibold text-white text-xl mb-1">High-Precision Validation Architecture</h3>
+        <p class="text-emerald-300 text-sm leading-relaxed">NuSync never submits a file that doesn't meet exact NUSUK specs. We catch passport MRZ errors, photo biometric mismatches, and hotel date misalignments before they hit the gateway.</p>
+      </div>
+      <div class="sm:ml-auto flex-shrink-0">
+        <div class="bg-emerald-800/60 border border-emerald-600/40 rounded-xl px-6 py-4 text-center">
+          <div class="font-mono-custom text-3xl font-bold text-gold-400">100+</div>
+          <div class="text-emerald-400 text-xs uppercase tracking-widest">Compliance Rules</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES GRID ─────────────────────────────────────────────────── -->
+<section id="features" class="geo-bg-light py-24 px-6 lg:px-12">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-16">
+      <span class="font-mono-custom text-xs text-emerald-600 uppercase tracking-widest">Core Infrastructure</span>
+      <h2 class="font-display font-bold text-4xl sm:text-5xl text-slate-800 mt-3">Advanced ERP Capabilities</h2>
+      <p class="text-slate-500 mt-4 max-w-xl mx-auto text-base">Everything you need to manage thousands of Umrah pilgrims with surgical precision.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Feature 1: Validation -->
+      <div class="feature-card bg-white rounded-2xl p-7">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="8" r="4" stroke="#065f46" stroke-width="1.5"/>
+            <path d="M4 19c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-800 mb-2">Automated Document OCR</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-4">Our engine reads passport MRZ data automatically, ensuring zero typos in pilgrim names, passport numbers, or expiry dates.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Passport OCR</span>
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Photo Specs</span>
+        </div>
+      </div>
+
+      <!-- Feature 2: Alternate Info -->
+      <div class="feature-card bg-emerald-50/50 border-emerald-100 rounded-2xl p-7">
+        <div class="w-12 h-12 rounded-xl bg-gold-200/40 border border-gold-400/40 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" stroke="#d4a843" stroke-width="1.5" fill="none"/>
+            <path d="M12 22V12M12 12L4 7M12 12l8-5" stroke="#d4a843" stroke-width="1.2" opacity="0.6"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-800 mb-2">Strategic "Alternate Info"</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-4">Manage placeholder flight and hotel details separately from confirmed bookings. Ideal for tentative group planning and visa pre-checks.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-gold-100 text-gold-700 px-2.5 py-1 rounded-full">Flexible Planning</span>
+          <span class="font-mono-custom text-xs bg-gold-100 text-gold-700 px-2.5 py-1 rounded-full">Placeholder Support</span>
+        </div>
+      </div>
+
+      <!-- Feature 3: Movements -->
+      <div class="feature-card bg-white rounded-2xl p-7">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="6" width="16" height="10" rx="2" stroke="#065f46" stroke-width="1.5"/>
+            <circle cx="7" cy="16" r="2" stroke="#065f46" stroke-width="1.5"/>
+            <circle cx="15" cy="16" r="2" stroke="#065f46" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-800 mb-2">Real-Time Movement Tracking</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-4">Manage driver details, vehicle numbers, and transport routes in one "Movements" dashboard. Keep your on-ground teams in perfect sync.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Driver Log</span>
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Vehicle Sync</span>
+        </div>
+      </div>
+
+      <!-- Feature 4: Vouchers -->
+      <div class="feature-card bg-white rounded-2xl p-7">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 17V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="#065f46" stroke-width="1.5"/>
+            <path d="M8 14l2 2 4-4" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-800 mb-2">Instant WhatsApp Vouchers</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-4">Upon visa issuance, professional PDF vouchers are generated and delivered via WhatsApp to you and your clients automatically.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Auto PDF</span>
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">WA Notify</span>
+        </div>
+      </div>
+
+      <!-- Feature 5: Multi-Currency -->
+      <div class="feature-card bg-white rounded-2xl p-7">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8" stroke="#065f46" stroke-width="1.5"/>
+            <path d="M11 7v8M8 11h6" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-800 mb-2">24/7 Global Support & Ledger</h3>
+        <p class="text-slate-500 text-sm leading-relaxed mb-4">Manage accounts in SAR, INR, or AED with 24/7 on-ground support for pilgrims and agencies across all Saudi airports and cities.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">24/7 Support</span>
+          <span class="font-mono-custom text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">Multi-Currency</span>
+        </div>
+      </div>
+
+      <!-- Feature 6: Sub-Agents -->
+      <div class="feature-card bg-emerald-800 rounded-2xl p-7 shadow-2xl">
+        <div class="w-12 h-12 rounded-xl bg-emerald-700 border border-emerald-600 flex items-center justify-center mb-5">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="7" r="3" stroke="#d4a843" stroke-width="1.5"/>
+            <path d="M4 16.5c0-3 3-5 7-5s7 2 7 5" stroke="white" stroke-width="1.2" opacity="0.6"/>
+          </svg>
+        </div>
+        <h3 class="font-display font-bold text-lg text-white mb-2">Agency Network Hierarchy</h3>
+        <p class="text-emerald-200 text-sm leading-relaxed mb-4">Onboard sub-agents under your master account. Track their performance, manage their credit limits, and consolidate their group files.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="font-mono-custom text-xs bg-emerald-700 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-600">B2B Network</span>
+          <span class="font-mono-custom text-xs bg-emerald-700 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-600">Credit Control</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── SPIRITUAL CALLOUT ────────────────────────────────────────────── -->
+<section class="bg-slate-50 py-12 px-6">
+  <div class="max-w-4xl mx-auto text-center">
+    <div class="inline-block mb-4 text-emerald-700 opacity-20">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="currentColor"><path d="M20 0l5 15h15l-12 9 5 16-13-10-13 10 5-16-12-9h15z"/></svg>
+    </div>
+    <h2 class="font-display text-2xl sm:text-3xl text-emerald-900 italic leading-relaxed">
+      "May Allah ﷻ accept the intentions and efforts of all pilgrims and grant a blessed Umrah journey to everyone."
+    </h2>
+    <div class="mt-4 flex items-center justify-center gap-2">
+      <div class="h-px w-8 bg-emerald-200"></div>
+      <span class="text-emerald-600 text-sm font-mono-custom">Moulavi Travels Prayer</span>
+      <div class="h-px w-8 bg-emerald-200"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PREMIUM ECOSYSTEM ────────────────────────────────────────────── -->
+<section class="py-24 px-6 lg:px-12 bg-white">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+      
+      <div>
+        <span class="font-mono-custom text-xs text-emerald-600 uppercase tracking-widest">Beyond the Visa</span>
+        <h2 class="font-display font-bold text-4xl text-slate-800 mt-3 leading-tight">
+          A Complete Ecosystem for<br/>
+          <em class="text-emerald-700 italic">The Guests of Allah.</em>
+        </h2>
+        <p class="text-slate-500 mt-6 text-base leading-relaxed">
+          Moulavi Travels is officially authorized to contract with international tourism companies and individuals. Since our establishment, we have proudly served hundreds of thousands of pilgrims through our integrated ground services.
+        </p>
+
+        <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div class="space-y-3">
+            <h4 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+              Ground Logistics
+            </h4>
+            <ul class="text-sm text-slate-500 space-y-2">
+              <li>• Modern Fleet (Private & Luxury)</li>
+              <li>• Haramain High-Speed Train Booking</li>
+              <li>• Airport Meet-and-Greet</li>
+              <li>• Accessible Transportation</li>
+            </ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+              Religious Services
+            </h4>
+            <ul class="text-sm text-slate-500 space-y-2">
+              <li>• Rawdha Permit Guidance</li>
+              <li>• Makkah & Madinah Hotel Operation</li>
+              <li>• Multilingual Licensed Guides</li>
+              <li>• Electric Cart Bookings</li>
+            </ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+              VIP & Fast-Track
+            </h4>
+            <ul class="text-sm text-slate-500 space-y-2">
+              <li>• Executive Lounge Access</li>
+              <li>• Priority Baggage Handling</li>
+              <li>• Personal Professional Escorts</li>
+              <li>• Tailored Private Journeys</li>
+            </ul>
+          </div>
+          <div class="space-y-3">
+            <h4 class="font-display font-bold text-lg text-slate-800 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-gold-400"></span>
+              Kingdom Tourism
+            </h4>
+            <ul class="text-sm text-slate-500 space-y-2">
+              <li>• Seasonal & Event Tourism</li>
+              <li>• Business & MICE Services</li>
+              <li>• Educational & Marine Tours</li>
+              <li>• Multi-City Saudi Programs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div class="bg-emerald-900 rounded-3xl p-8 lg:p-12 shadow-2xl relative overflow-hidden">
+          <!-- Decorative Pattern -->
+          <div class="absolute top-0 right-0 w-32 h-32 bg-gold-400 opacity-5 -mr-16 -mt-16 rounded-full"></div>
+          
+          <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-12 h-12 rounded-xl bg-emerald-800 border border-gold-400/30 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#d4a843" stroke-width="1.5"/></svg>
+              </div>
+              <div>
+                <div class="text-gold-400 font-mono-custom text-xs uppercase tracking-widest">Official Track Record</div>
+                <div class="text-white font-display font-bold text-2xl">Proven Excellence</div>
+              </div>
+            </div>
+
+            <div class="space-y-8">
+              <div class="flex items-center gap-6">
+                <div class="text-5xl font-display font-bold text-white">700K+</div>
+                <div class="text-emerald-300 text-sm leading-tight">Pilgrims Served<br/><span class="text-emerald-500 opacity-60">Since established</span></div>
+              </div>
+              <div class="h-px bg-emerald-800/50"></div>
+              <div class="grid grid-cols-2 gap-8">
+                <div>
+                  <div class="text-white font-bold text-xl mb-1">24/7</div>
+                  <div class="text-emerald-400 text-xs uppercase tracking-wider">Mission Support</div>
+                </div>
+                <div>
+                  <div class="text-white font-bold text-xl mb-1">Direct</div>
+                  <div class="text-emerald-400 text-xs uppercase tracking-wider">Ministry Accreditation</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-emerald-800/50">
+              <p class="text-emerald-200 text-sm italic leading-relaxed">
+                "We look forward to fruitful cooperation and to being your trusted partner in serving the guests of the Kingdom."
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Floating Stat Card -->
+        <div class="absolute -bottom-6 -left-6 bg-white p-6 rounded-2xl shadow-2xl border border-emerald-100 hidden sm:block">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+            </div>
+            <div>
+              <div class="text-slate-800 font-bold text-sm">Season 1447 Hijri</div>
+              <div class="text-slate-400 text-xs">Now Open for Contracting</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── TRUST / WHY NUSYNC ───────────────────────────────────────────── -->
+<section class="py-20 px-6 lg:px-12 bg-white">
+  <div class="max-w-5xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <span class="font-mono-custom text-xs text-emerald-600 uppercase tracking-widest">Operator Expertise</span>
+        <h2 class="font-display font-bold text-4xl text-slate-800 mt-3 leading-tight">
+          Compliance is binary.<br/>
+          <em class="text-emerald-700">Either it's perfect, or it's rejected.</em>
+        </h2>
+        <p class="text-slate-500 mt-5 text-base leading-relaxed">NuSync was built by Moulavi Travels, a team with 25+ years of on-ground experience in KSA. We've automated the exact manual checks our experts perform to ensure every single visa application is bulletproof.</p>
+
+        <div class="mt-8 space-y-4">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-slate-800 text-sm">No "Trial and Error" Submissions</div>
+              <div class="text-slate-500 text-sm mt-0.5">We don't gamble with your client's trust. Every file is validated before it leaves our server.</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="#065f46" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="font-semibold text-slate-800 text-sm">Direct NUSUK API Connectivity</div>
+              <div class="text-slate-500 text-sm mt-0.5">Authorized gateway access means faster processing and more reliable status updates.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal-style compliance readout -->
+      <div class="bg-emerald-950 rounded-2xl p-6 font-mono-custom text-sm shadow-2xl">
+        <div class="flex items-center gap-2 mb-5 pb-4 border-b border-emerald-800">
+          <div class="w-3 h-3 rounded-full bg-red-500/70"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500/70"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500/70"></div>
+          <span class="text-emerald-500 text-xs ml-2">NuSync Compliance Engine v3.1</span>
+        </div>
+        <div class="space-y-2.5 text-xs">
+          <div class="text-emerald-400">$ Analyzing group: <span class="text-white">UMR-7782 (42 pilgrims)</span></div>
+          <div class="text-slate-500">───────────────────────────────</div>
+          <div class="flex justify-between"><span class="text-slate-400">MRZ Consistency Check</span><span class="text-emerald-400">✓ PASS</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Photo Background/Size Validation</span><span class="text-emerald-400">✓ PASS</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Alternate Info Overlay</span><span class="text-emerald-400">✓ ENABLED</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Hotel BRN Verification</span><span class="text-emerald-400">✓ PASS</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">Transport Movement Mapping</span><span class="text-emerald-400">✓ PASS</span></div>
+          <div class="text-slate-500 mt-2">───────────────────────────────</div>
+          <div class="flex justify-between text-base mt-3">
+            <span class="text-white font-bold">GATEWAY READY</span>
+            <span class="text-gold-400 font-bold">READY FOR NUSUK SYNC</span>
+          </div>
+          <div class="text-slate-500 text-xs mt-1">Output: vouchers-7782.pdf generated.</div>
+          <div class="mt-4 text-emerald-500 animate-pulse">▋</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep-geo mx-auto max-w-4xl"></div>
+
+<!-- ─── REGISTRATION FORM ──────────────────────────────────────────────── -->
+<section id="register" class="geo-bg py-24 px-6 lg:px-12 relative overflow-hidden">
+
+  <div class="absolute inset-0 bg-gradient-to-b from-emerald-950/70 to-emerald-950/90 pointer-events-none"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto">
+
+    <div class="text-center mb-12">
+      <span class="font-mono-custom text-xs text-gold-400 uppercase tracking-widest">Agency Onboarding</span>
+      <h2 class="font-display font-bold text-4xl sm:text-5xl text-white mt-3">Request Gateway Access</h2>
+      <p class="text-emerald-300 mt-4 max-w-xl mx-auto text-base">Our onboarding team reviews all applications within 24 hours. NUSUK gateway access is granted upon verification.</p>
+    </div>
+
+    <!-- Form card — SaaS dashboard style -->
+    <div class="bg-white/[0.03] backdrop-blur-sm border border-emerald-700/40 rounded-2xl overflow-hidden shadow-2xl">
+
+      <!-- Form header -->
+      <div class="bg-emerald-900/60 border-b border-emerald-700/40 px-8 py-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.3 6.4 6 7 3.7-.6 6-3.7 6-7V4L8 1z" stroke="#d4a843" stroke-width="1.2"/></svg>
+          </div>
+          <span class="font-mono-custom text-sm text-emerald-300">nusync.moulavitravel.com / agency / onboard</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="font-mono-custom text-xs text-emerald-400">Secure Channel</span>
+        </div>
+      </div>
+
+      <!-- Form body -->
+      <div class="p-8 sm:p-10">
+        <form id="agencyForm" onsubmit="handleSubmit(event)">
+
+          <!-- Section 1: Agency Core Details -->
+          <div class="mb-10">
+            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">01</span>
+              Agency Core Details
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Agency / Company Name *</label>
+                <input type="text" name="party_name" required placeholder="e.g. Al Noor Travel & Tours" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Agency Code (Optional)</label>
+                <input type="text" name="party_code" maxlength="10" placeholder="e.g. ANT001" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Business Email *</label>
+                <input type="email" name="email" required placeholder="you@agency.com" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Office Contact Number</label>
+                <input type="tel" name="contact_number" placeholder="+91 1234567890" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">WhatsApp Number *</label>
+                <input type="tel" name="whatsapp_number" required placeholder="+91 1234567890" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Office Address</label>
+                <input type="text" name="address" placeholder="Full business address" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Primary Contact Person -->
+          <div class="mb-10">
+            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">02</span>
+              Primary Contact Person
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Contact Name *</label>
+                <input type="text" name="contact_name" required placeholder="Full name" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Contact Number *</label>
+                <input type="tel" name="contact_person_number" required placeholder="+91 1234567890" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Department</label>
+                <input type="text" name="department" placeholder="e.g. Operations" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Legal & Identification (Conditional for B2B) -->
+          <div id="legalSection" class="mb-10">
+            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">03</span>
+              Legal & Identification <span id="b2bLabel" class="text-[10px] text-gold-500 bg-gold-500/10 px-2 py-0.5 rounded ml-2 hidden uppercase tracking-widest">Required for B2B</span>
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">GST Number <span class="gst-req hidden text-gold-500">*</span></label>
+                <input type="text" name="gst_number" id="gstInput" placeholder="GSTIN" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">PAN Number <span class="pan-req hidden text-gold-500">*</span></label>
+                <input type="text" name="pan_number" id="panInput" placeholder="PAN" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Aadhaar Number</label>
+                <input type="text" name="aadhaar_number" placeholder="Aadhaar" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Account Setup & Preferences -->
+          <div class="mb-10">
+            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">04</span>
+              Account Setup & Preferences
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Account Currency *</label>
+                <select name="account_currency_id" required class="w-full bg-emerald-950 border border-emerald-700/50 rounded-lg px-4 py-3 text-white text-sm transition-all">
+                  <option value="" disabled selected>Select currency…</option>
+                  <option value="sar_id">SAR - Saudi Riyal</option>
+                  <option value="inr_id">INR - Indian Rupee</option>
+                  <option value="aed_id">AED - UAE Dirham</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Customer Type *</label>
+                <select name="customer_type" id="customerTypeSelect" onchange="handleCustomerTypeChange()" required class="w-full bg-emerald-950 border border-emerald-700/50 rounded-lg px-4 py-3 text-white text-sm transition-all">
+                  <option value="direct">Direct Customer</option>
+                  <option value="b2b" selected>B2B Agency</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-10">
+              <div class="space-y-4">
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Party Type</label>
+                <div class="flex flex-col gap-3">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="is_customer" checked disabled class="w-4 h-4 rounded border-emerald-700 bg-emerald-950 text-emerald-600 opacity-70" />
+                    <span class="text-emerald-100 text-sm group-hover:text-white transition-colors">Customer Agency</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Preferences</label>
+                <div class="flex flex-col gap-3">
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="login_required" checked class="w-4 h-4 rounded border-emerald-700 bg-emerald-950 text-emerald-600" />
+                    <div class="flex flex-col">
+                      <span class="text-emerald-100 text-sm group-hover:text-white transition-colors">Create Login Account</span>
+                      <span class="text-emerald-500 text-[10px]">Credentials will be sent via Email/WhatsApp</span>
+                    </div>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="email_notification" checked class="w-4 h-4 rounded border-emerald-700 bg-emerald-950 text-emerald-600" />
+                    <span class="text-emerald-100 text-sm group-hover:text-white transition-colors">Email Notifications</span>
+                  </label>
+                  <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" name="sms_notification" checked class="w-4 h-4 rounded border-emerald-700 bg-emerald-950 text-emerald-600" />
+                    <span class="text-emerald-100 text-sm group-hover:text-white transition-colors">WhatsApp/SMS Alerts</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 5: Documents Upload -->
+          <div class="mb-10">
+            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">05</span>
+              Documents Upload
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div id="gstDoc" class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 transition-all">
+                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">GST Certificate <span class="gst-req hidden text-gold-500">*</span></label>
+                <input type="file" name="doc_gst" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
+              </div>
+              <div id="panDoc" class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 transition-all">
+                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">PAN Card <span class="pan-req hidden text-gold-500">*</span></label>
+                <input type="file" name="doc_pan" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
+              </div>
+              <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4">
+                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">Aadhaar Card</label>
+                <input type="file" name="doc_aadhaar" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
+              </div>
+              <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4">
+                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">Other Document</label>
+                <input type="file" name="doc_other" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
+              </div>
+            </div>
+          </div>
+
+
+          <!-- Submit -->
+          <button type="submit" id="submitBtn" class="cta-shimmer w-full font-semibold text-base py-4 rounded-xl shadow-2xl flex items-center justify-center gap-3 transition-all">
+            <span id="btnText">Complete Agency Registration</span>
+            <svg id="btnIcon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <svg id="btnSpinner" class="hidden animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" stroke-dasharray="30 14" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <!-- Success message -->
+          <div id="successMsg" class="hidden mt-6 bg-emerald-900/60 border border-emerald-600/50 rounded-xl p-5 text-center">
+            <div class="text-emerald-400 text-2xl mb-2">✓</div>
+            <div class="font-display font-semibold text-white text-lg">Registration Received</div>
+            <div class="text-emerald-300 text-sm mt-1">Our team will contact you within 24 hours. Check your email for confirmation.</div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Form footer -->
+      <div class="bg-emerald-900/30 border-t border-emerald-700/30 px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-4 text-xs text-emerald-500">
+          <span class="flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L2 3v3c0 2.2 1.7 4.3 4 4.8 2.3-.5 4-2.6 4-4.8V3L6 1z" stroke="#10b981" stroke-width="1"/></svg>
+            256-bit encrypted
+          </span>
+          <span class="flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#10b981" stroke-width="1"/><path d="M4 6l1.5 1.5L8 4" stroke="#10b981" stroke-width="1" stroke-linecap="round"/></svg>
+            No third-party data sharing
+          </span>
+        </div>
+        <span class="text-xs text-emerald-600">Need help? <a href="mailto:nusync@moulavitravel.com" class="text-gold-400 hover:underline">nusync@moulavitravel.com</a></span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ──────────────────────────────────────────────────────────── -->
+<footer class="bg-emerald-950 py-16 px-6 lg:px-12 border-t border-emerald-900">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-12 mb-12">
+      <div class="col-span-1 sm:col-span-2">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-emerald-800 flex items-center justify-center shadow-lg">
+            <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+              <path d="M3 10 Q10 3 17 10 Q10 17 3 10Z" fill="none" stroke="#d4a843" stroke-width="1.5"/>
+              <circle cx="10" cy="10" r="3" fill="#d4a843"/>
+            </svg>
+          </div>
+          <div>
+            <span class="font-display font-bold text-white text-2xl tracking-tight">NuSync</span>
+            <span class="block text-[10px] text-emerald-500 font-mono-custom tracking-[0.2em] uppercase">by Moulavi Travels</span>
+          </div>
+        </div>
+        <p class="text-emerald-400/80 text-sm leading-relaxed max-w-sm">The high-compliance infrastructure for the global Umrah ecosystem. Bridging the gap between travel agents and the NUSUK gateway since 2024.</p>
+        <div class="mt-8 flex gap-4">
+          <div class="text-xs text-emerald-700 font-mono-custom">GLOBAL HQ</div>
+          <div class="text-xs text-emerald-500">Moulavi Travels Ecosystem · Est. 1998</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="font-mono-custom text-xs text-gold-400 uppercase tracking-widest mb-6">Infrastructure</div>
+        <ul class="space-y-4 text-sm text-emerald-400/70">
+          <li><a href="#how-it-works" class="hover:text-white transition-colors">How the Bridge Works</a></li>
+          <li><a href="#features" class="hover:text-white transition-colors">Validation Engine</a></li>
+          <li><a href="#features" class="hover:text-white transition-colors">Movement Sync</a></li>
+          <li><a href="#register" class="hover:text-white transition-colors">Gateway Onboarding</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="font-mono-custom text-xs text-gold-400 uppercase tracking-widest mb-6">Contact</div>
+        <ul class="space-y-4 text-sm text-emerald-400/70">
+          <li>nusync@moulavitravel.com</li>
+          <li>24/7 Agent Support</li>
+          <li>WhatsApp: +91 98765 43210</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sep-geo mb-10 opacity-30"></div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-[10px] text-emerald-700 uppercase tracking-widest">
+      <span>© 2026 Moulavi Travels. NuSync™ is a proprietary compliance platform.</span>
+      <div class="flex gap-8">
+        <a href="#" class="hover:text-emerald-400 transition-colors">Data Privacy</a>
+        <a href="#" class="hover:text-emerald-400 transition-colors">Gateway Terms</a>
+        <a href="#" class="hover:text-emerald-400 transition-colors">SLA</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── SCRIPTS ────────────────────────────────────────────────────────── -->
+<script>
+  // Nav scroll effect
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 60) {
+      navbar.classList.add('nav-scrolled');
+    } else {
+      navbar.classList.remove('nav-scrolled');
+    }
+  });
+
+  // Mobile menu toggle
+  document.getElementById('hamburger').addEventListener('click', () => {
+    const menu = document.getElementById('mobile-menu');
+    menu.classList.toggle('open');
+  });
+
+  // Smooth scroll for all anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mobile-menu').classList.remove('open');
+      }
+    });
+  });
+
+  // Handle customer type change (B2B vs Direct)
+  function handleCustomerTypeChange() {
+    const customerType = document.getElementById('customerTypeSelect').value;
+    const isB2B = customerType === 'b2b';
+    
+    // Toggle labels and required indicators
+    const b2bLabel = document.getElementById('b2bLabel');
+    const gstReqs = document.querySelectorAll('.gst-req');
+    const panReqs = document.querySelectorAll('.pan-req');
+    
+    if (isB2B) {
+      b2bLabel.classList.remove('hidden');
+      gstReqs.forEach(el => el.classList.remove('hidden'));
+      panReqs.forEach(el => el.classList.remove('hidden'));
+    } else {
+      b2bLabel.classList.add('hidden');
+      gstReqs.forEach(el => el.classList.add('hidden'));
+      panReqs.forEach(el => el.classList.add('hidden'));
+    }
+  }
+
+  // Initialize form state
+  document.addEventListener('DOMContentLoaded', () => {
+    handleCustomerTypeChange();
+  });
+
+  // Form submit handler
+  function handleSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    // Client-side validation based on conditions
+    const customerType = formData.get('customer_type');
+    
+    if (customerType === 'b2b') {
+      if (!formData.get('gst_number')?.trim()) {
+        alert('GST Number is required for B2B agencies');
+        return;
+      }
+      if (!formData.get('pan_number')?.trim()) {
+        alert('PAN Number is required for B2B agencies');
+        return;
+      }
+    }
+
+    // Prepare the payload for the backend API
+    const payload = {
+      party_name: formData.get('party_name'),
+      party_code: formData.get('party_code') || null,
+      email: formData.get('email'),
+      contact_number: formData.get('contact_number') || null,
+      whatsapp_number: formData.get('whatsapp_number'),
+      address: formData.get('address') || null,
+      gst_number: formData.get('gst_number') || null,
+      pan_number: formData.get('pan_number') || null,
+      aadhaar_number: formData.get('aadhaar_number') || null,
+      customer_type: customerType,
+      account_currency_id: formData.get('account_currency_id'), 
+      is_supplier: false,
+      is_customer: true,
+      login_required: form.login_required.checked,
+      email_notification: form.email_notification.checked,
+      sms_notification: form.sms_notification.checked,
+      contacts: [
+        {
+          contact_name: formData.get('contact_name'),
+          contact_number: formData.get('contact_person_number'),
+          department: formData.get('department') || null
+        }
+      ],
+      supplier_service_types: []
+    };
+
+    console.log('NuSync Registration Payload:', payload);
+
+    const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnIcon = document.getElementById('btnIcon');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const successMsg = document.getElementById('successMsg');
+
+    // Show loading
+    btn.disabled = true;
+    btn.style.opacity = '0.8';
+    btnIcon.classList.add('hidden');
+    btnSpinner.classList.remove('hidden');
+    btnText.textContent = 'Registering Agency…';
+
+    // API Integration
+    const API_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:5000/api/landing/register' 
+      : '/api/landing/register';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        btn.classList.add('hidden');
+        successMsg.classList.remove('hidden');
+        successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        throw new Error(data.message || 'Registration failed');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Registration failed: ' + error.message);
+      // Reset button
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btnIcon.classList.remove('hidden');
+      btnSpinner.classList.add('hidden');
+      btnText.textContent = 'Complete Agency Registration';
+    });
+  }
+
+  // Intersection observer for scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card').forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease, border-color 0.25s, box-shadow 0.25s';
+    observer.observe(card);
+  });
+</script>
+
+</body>
+</html>
