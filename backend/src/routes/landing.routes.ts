@@ -68,6 +68,12 @@ router.post('/verify-code', async (req: Request, res: Response) => {
       data: { verified: true }
     });
 
+    // Update User model
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerified: true }
+    });
+
     res.status(200).json({ success: true, message: 'Email verified successfully' });
   } catch (error: any) {
     console.error('[LANDING] Verify code error:', error.message);
@@ -102,16 +108,6 @@ router.post('/register', async (req: Request, res: Response) => {
       email_notification,
       sms_notification
     } = registrationDetails;
-
-    // Check if email is verified
-    const isVerified = await prisma.emailVerification.findFirst({
-      where: { email, verified: true },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (!isVerified) {
-      return res.status(400).json({ success: false, message: 'Please verify your email address first' });
-    }
 
     console.log('[LANDING] New registration received:', party_name);
 
@@ -162,7 +158,8 @@ router.post('/register', async (req: Request, res: Response) => {
             email,
             password: hashedPassword,
             role: 'party',
-            isActive: true
+            isActive: true,
+            emailVerified: false
           }
         });
 

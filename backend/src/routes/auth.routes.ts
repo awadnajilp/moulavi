@@ -82,6 +82,7 @@ router.post('/login', loginValidation, asyncHandler(async (req: AuthRequest, res
       name: user.name,
       email: user.email,
       role: user.role,
+      emailVerified: user.emailVerified
     },
     accessToken,
     refreshToken,

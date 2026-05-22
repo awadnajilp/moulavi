@@ -76,7 +76,7 @@ const EMAIL_TEMPLATES = {
           ${password ? `
           <div class="info-box">
             <p><strong>Your Account is Ready!</strong></p>
-            <p>We have automatically created your agent portal access. You can now log in and complete your profile by uploading the required documents (GST, PAN, etc.).</p>
+            <p>We have automatically created your agent portal access. You can now log in using the credentials below. <strong>Please note that you will be required to verify your email address and complete your profile (PAN, Aadhaar, etc.) upon your first login.</strong></p>
           </div>
           
           <div class="credential-box">
