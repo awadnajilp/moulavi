@@ -37,7 +37,7 @@ const transporter = nodemailer.createTransport({
 
 // Email templates
 const EMAIL_TEMPLATES = {
-  registrationThankYou: (name: string) => `
+  registrationThankYou: (name: string, email: string, password?: string) => `
     <!DOCTYPE html>
     <html>
     <head>
@@ -51,11 +51,15 @@ const EMAIL_TEMPLATES = {
         .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
         .content { padding: 30px; }
         .greeting { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #065f46; }
-        .message { font-size: 16px; color: #555; margin-bottom: 30px; }
+        .message { font-size: 16px; color: #555; margin-bottom: 20px; }
         .info-box { background: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; border-radius: 4px; margin-bottom: 30px; }
+        .credential-box { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .credential-row { margin-bottom: 10px; font-family: monospace; }
+        .label { font-weight: bold; color: #64748b; width: 100px; display: inline-block; }
+        .value { color: #1e293b; font-weight: bold; }
         .footer { background: #1e293b; color: #cbd5e1; padding: 20px; text-align: center; font-size: 12px; }
         .footer p { margin: 5px 0; }
-        .cta-text { font-weight: 600; color: #065f46; }
+        .cta-button { display: inline-block; background: #d4a843; color: #1e293b; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-top: 20px; }
       </style>
     </head>
     <body>
@@ -68,14 +72,33 @@ const EMAIL_TEMPLATES = {
           <div class="message">
             Thank you for requesting access to the NuSync Umrah Gateway by Moulavi Travels. We have received your agency registration details.
           </div>
+          
+          ${password ? `
           <div class="info-box">
-            <p><strong>What's next?</strong></p>
-            <p>Our onboarding team is currently reviewing your application. Once verified (usually within 24 hours), you will receive your secure login credentials via WhatsApp and Email.</p>
+            <p><strong>Your Account is Ready!</strong></p>
+            <p>We have automatically created your agent portal access. You can now log in and complete your profile by uploading the required documents (GST, PAN, etc.).</p>
           </div>
-          <p class="message">
+          
+          <div class="credential-box">
+            <div class="credential-row"><span class="label">Login URL:</span> <span class="value">https://umra.moulavi.in/login</span></div>
+            <div class="credential-row"><span class="label">Username:</span> <span class="value">${email}</span></div>
+            <div class="credential-row"><span class="label">Password:</span> <span class="value">${password}</span></div>
+          </div>
+          
+          <center>
+            <a href="https://umra.moulavi.in/login" class="cta-button">Access Agent Portal</a>
+          </center>
+          ` : `
+          <div class="info-box">
+            <p><strong>Review in Progress</strong></p>
+            <p>Our onboarding team is currently reviewing your application. Once verified, you will receive your secure login credentials via WhatsApp and Email.</p>
+          </div>
+          `}
+          
+          <p class="message" style="margin-top: 30px;">
             We look forward to a fruitful cooperation and to being your trusted partner in serving the guests of the Kingdom.
           </p>
-          <p class="cta-text">Moulavi Travel & Rec Agent<br>Reg ID: 22282 · Season 1447 Hijri</p>
+          <p style="font-weight: bold; color: #065f46;">Moulavi Travel & Rec Agent<br>Season 1447 Hijri</p>
         </div>
         <div class="footer">
           <p>© 2025 Moulavi Travels. All rights reserved.</p>
@@ -1007,13 +1030,14 @@ export const sendIqamaConfirmationEmail = async (
 // Send Thank You email to customer after landing page registration
 export const sendLandingRegistrationThankYouEmail = async (
   to: string,
-  name: string
+  name: string,
+  password?: string
 ): Promise<void> => {
   const mailOptions: nodemailer.SendMailOptions = {
     from: EMAIL_CONFIG.from,
     to,
-    subject: 'Thank you for registering with NuSync — Moulavi Travels',
-    html: EMAIL_TEMPLATES.registrationThankYou(name),
+    subject: 'Welcome to NuSync — Your Agent Access is Ready',
+    html: EMAIL_TEMPLATES.registrationThankYou(name, to, password),
   };
 
   try {

@@ -887,32 +887,6 @@
             </div>
           </div>
 
-          <!-- Section 5: Documents Upload -->
-          <div class="mb-10">
-            <h3 class="font-display font-semibold text-gold-300 text-lg mb-4 flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">05</span>
-              Documents Upload
-            </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div id="gstDoc" class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 transition-all">
-                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">GST Certificate <span class="gst-req hidden text-gold-500">*</span></label>
-                <input type="file" name="doc_gst" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
-              </div>
-              <div id="panDoc" class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4 transition-all">
-                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">PAN Card <span class="pan-req hidden text-gold-500">*</span></label>
-                <input type="file" name="doc_pan" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
-              </div>
-              <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4">
-                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">Aadhaar Card</label>
-                <input type="file" name="doc_aadhaar" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
-              </div>
-              <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-xl p-4">
-                <label class="block font-mono-custom text-[10px] text-emerald-400 uppercase tracking-widest mb-2">Other Document</label>
-                <input type="file" name="doc_other" class="w-full text-xs text-emerald-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-800 file:text-emerald-100 hover:file:bg-emerald-700 transition-all" />
-              </div>
-            </div>
-          </div>
-
 
           <!-- Submit -->
           <button type="submit" id="submitBtn" class="cta-shimmer w-full font-semibold text-base py-4 rounded-xl shadow-2xl flex items-center justify-center gap-3 transition-all">
@@ -1075,17 +1049,6 @@
     // Client-side validation based on conditions
     const customerType = formData.get('customer_type');
     
-    if (customerType === 'b2b') {
-      if (!formData.get('gst_number')?.trim()) {
-        alert('GST Number is required for B2B agencies');
-        return;
-      }
-      if (!formData.get('pan_number')?.trim()) {
-        alert('PAN Number is required for B2B agencies');
-        return;
-      }
-    }
-
     // Prepare the payload for the backend API
     const payload = {
       party_name: formData.get('party_name'),

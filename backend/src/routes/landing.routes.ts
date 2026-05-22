@@ -4,6 +4,8 @@ import {
   sendLandingRegistrationAdminNotificationEmail 
 } from '../services/emailService';
 import { prisma } from '../lib/prisma';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -37,7 +39,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     console.log('[LANDING] New registration received:', party_name);
 
-    // 1. Save to database
+    // 1. Save to landing_registrations (audit trail)
     const landingReg = await prisma.landingRegistration.create({
       data: {
         partyName: party_name,
@@ -61,20 +63,75 @@ router.post('/register', async (req: Request, res: Response) => {
       }
     });
 
-    console.log('[LANDING] Saved to database with ID:', landingReg.id);
+    let generatedPassword = '';
+    
+    // 2. Automatically create User and Party if login is required
+    if (login_required === true || login_required === 'true') {
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      
+      if (!existingUser) {
+        // Generate secure random password
+        generatedPassword = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 char hex
+        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+        
+        // Find admin user for 'created_by' (needed by Party model)
+        const adminUser = await prisma.user.findFirst({ where: { role: 'admin' } });
+        if (!adminUser) throw new Error('System admin not found');
 
-    // 2. Send Thank You email to customer
-    if (email) {
-      await sendLandingRegistrationThankYouEmail(email, contact_name || party_name);
+        // Create User
+        const newUser = await prisma.user.create({
+          data: {
+            name: contact_name || party_name,
+            email,
+            password: hashedPassword,
+            role: 'party',
+            isActive: true
+          }
+        });
+
+        // Create Party
+        await prisma.party.create({
+          data: {
+            partyName: party_name,
+            partyCode: party_code || `AGN${landingReg.id.substring(0, 5).toUpperCase()}`,
+            email,
+            contactNumber: contact_number || null,
+            whatsappNumber: whatsapp_number,
+            address: address || null,
+            customerType: customer_type === 'direct' ? 'direct' : 'b2b',
+            isCustomer: true,
+            isSupplier: false,
+            loginRequired: true,
+            userId: newUser.id,
+            createdBy: adminUser.id,
+            accountCurrencyId: account_currency_id || 'sar_id',
+            gstNumber: gst_number || null,
+            panNumber: pan_number || null,
+            aadhaarNumber: aadhaar_number || null
+          }
+        });
+        
+        console.log('[LANDING] Created User and Party for:', email);
+      }
     }
 
-    // 3. Send Notification email to admin
+    // 3. Send Thank You email to customer (with credentials if created)
+    if (email) {
+      await sendLandingRegistrationThankYouEmail(
+        email, 
+        contact_name || party_name, 
+        generatedPassword || undefined
+      );
+    }
+
+    // 4. Send Notification email to admin
     await sendLandingRegistrationAdminNotificationEmail(registrationDetails);
 
     res.status(200).json({
       success: true,
-      message: 'Registration request received and saved successfully',
-      data: { id: landingReg.id }
+      message: 'Registration request received and account created',
+      data: { id: landingReg.id, accountCreated: !!generatedPassword }
     });
   } catch (error: any) {
     console.error('[LANDING] Registration error:', error.message);
