@@ -759,8 +759,21 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div>
                 <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Business Email *</label>
-                <input type="email" name="email" required placeholder="you@agency.com" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+                <div class="flex gap-2">
+                  <input type="email" name="email" id="emailInput" required placeholder="you@agency.com" class="flex-1 bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+                  <button type="button" id="sendCodeBtn" onclick="sendVerificationCode()" class="bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">Verify</button>
+                </div>
+                <div id="verifyStatus" class="mt-2 text-[10px] hidden"></div>
               </div>
+              
+              <div id="otpSection" class="hidden">
+                <label class="block font-mono-custom text-xs text-gold-400 uppercase tracking-widest mb-2">Enter Verification Code *</label>
+                <div class="flex gap-2">
+                  <input type="text" id="otpInput" placeholder="6-digit code" class="flex-1 bg-white/5 border border-gold-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
+                  <button type="button" onclick="verifyOTP()" class="bg-gold-500 hover:bg-gold-400 text-emerald-950 text-xs font-bold px-4 py-2 rounded-lg transition-all">Verify Code</button>
+                </div>
+              </div>
+
               <div>
                 <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Office Contact Number</label>
                 <input type="tel" name="contact_number" placeholder="+91 1234567890" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
@@ -1027,9 +1040,104 @@
     handleCustomerTypeChange();
   });
 
+  // Email Verification State
+  let isEmailVerified = false;
+
+  async function sendVerificationCode() {
+    const email = document.getElementById('emailInput').value;
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    const btn = document.getElementById('sendCodeBtn');
+    const status = document.getElementById('verifyStatus');
+    const otpSection = document.getElementById('otpSection');
+
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000/api/landing/send-verification' 
+        : '/api/landing/send-verification';
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        status.textContent = 'Code sent to your email!';
+        status.className = 'mt-2 text-[10px] text-gold-400';
+        status.classList.remove('hidden');
+        otpSection.classList.remove('hidden');
+        btn.textContent = 'Resend';
+        btn.disabled = false;
+      } else {
+        throw new Error(data.error || 'Failed to send code');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+    }
+  }
+
+  async function verifyOTP() {
+    const email = document.getElementById('emailInput').value;
+    const code = document.getElementById('otpInput').value;
+
+    if (!code) {
+      alert('Please enter the 6-digit code');
+      return;
+    }
+
+    try {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000/api/landing/verify-code' 
+        : '/api/landing/verify-code';
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        isEmailVerified = true;
+        document.getElementById('otpSection').classList.add('hidden');
+        document.getElementById('sendCodeBtn').classList.add('hidden');
+        document.getElementById('emailInput').disabled = true;
+        
+        const status = document.getElementById('verifyStatus');
+        status.textContent = '✓ Email Verified';
+        status.className = 'mt-2 text-[10px] text-emerald-400 font-bold';
+      } else {
+        alert(data.error || 'Invalid code');
+      }
+    } catch (err) {
+      alert('Verification failed: ' + err.message);
+    }
+  }
+
   // Form submit handler
   function handleSubmit(e) {
     e.preventDefault();
+
+    if (!isEmailVerified) {
+      alert('Please verify your email address first');
+      const status = document.getElementById('verifyStatus');
+      status.textContent = '⚠ Action Required: Verify Email';
+      status.className = 'mt-2 text-[10px] text-red-400 font-bold';
+      status.classList.remove('hidden');
+      status.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     const form = e.target;
     const formData = new FormData(form);
     

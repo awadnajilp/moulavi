@@ -154,6 +154,27 @@ const EMAIL_TEMPLATES = {
     </body>
     </html>
   `,
+
+  verificationCode: (code: string) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Email Verification - NuSync</title>
+      <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; text-align: center; padding: 40px; }
+        .code { font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #065f46; margin: 20px 0; padding: 20px; background: #f0fdf4; border-radius: 8px; display: inline-block; }
+      </style>
+    </head>
+    <body>
+      <h2>Verify Your Email</h2>
+      <p>Your verification code for NuSync registration is:</p>
+      <div class="code">${code}</div>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you did not request this code, please ignore this email.</p>
+    </body>
+    </html>
+  `,
   credentials: (name: string, email: string, password: string, frontendUrl: string) => `
     <!DOCTYPE html>
     <html>
@@ -1067,3 +1088,23 @@ export const sendLandingRegistrationAdminNotificationEmail = async (
   }
 };
 
+
+// Send verification code email
+export const sendVerificationEmail = async (
+  to: string,
+  code: string
+): Promise<void> => {
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: EMAIL_CONFIG.from,
+    to,
+    subject: 'Verification Code - NuSync Moulavi Travels',
+    html: EMAIL_TEMPLATES.verificationCode(code),
+  };
+
+  try {
+    await sendEmail(mailOptions);
+  } catch (error: any) {
+    console.error('[EMAIL] ❌ sendVerificationEmail failed:', error?.message);
+    throw new Error('Failed to send verification email');
+  }
+};

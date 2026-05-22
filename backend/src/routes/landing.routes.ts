@@ -1,13 +1,79 @@
 import { Router, Request, Response } from 'express';
 import { 
   sendLandingRegistrationThankYouEmail, 
-  sendLandingRegistrationAdminNotificationEmail 
+  sendLandingRegistrationAdminNotificationEmail,
+  sendVerificationEmail 
 } from '../services/emailService';
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
 const router = Router();
+
+/**
+ * @route POST /api/landing/send-verification
+ * @desc Send verification code to email
+ * @access Public
+ */
+router.post('/send-verification', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    // Generate 6 digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    // Save to DB
+    await prisma.emailVerification.create({
+      data: { email, code, expiresAt }
+    });
+
+    // Send Email
+    await sendVerificationEmail(email, code);
+
+    res.status(200).json({ success: true, message: 'Verification code sent' });
+  } catch (error: any) {
+    console.error('[LANDING] Send verification error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to send verification code' });
+  }
+});
+
+/**
+ * @route POST /api/landing/verify-code
+ * @desc Verify the code sent to email
+ * @access Public
+ */
+router.post('/verify-code', async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+
+    const verification = await prisma.emailVerification.findFirst({
+      where: { 
+        email, 
+        code, 
+        verified: false,
+        expiresAt: { gt: new Date() }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!verification) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired code' });
+    }
+
+    await prisma.emailVerification.update({
+      where: { id: verification.id },
+      data: { verified: true }
+    });
+
+    res.status(200).json({ success: true, message: 'Email verified successfully' });
+  } catch (error: any) {
+    console.error('[LANDING] Verify code error:', error.message);
+    res.status(500).json({ success: false, error: 'Verification failed' });
+  }
+});
 
 /**
  * @route POST /api/landing/register
@@ -36,6 +102,16 @@ router.post('/register', async (req: Request, res: Response) => {
       email_notification,
       sms_notification
     } = registrationDetails;
+
+    // Check if email is verified
+    const isVerified = await prisma.emailVerification.findFirst({
+      where: { email, verified: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!isVerified) {
+      return res.status(400).json({ success: false, message: 'Please verify your email address first' });
+    }
 
     console.log('[LANDING] New registration received:', party_name);
 
