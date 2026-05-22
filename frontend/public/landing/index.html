@@ -752,15 +752,9 @@
               <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">01</span>
               Agency Core Details
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Agency / Company Name *</label>
-                <input type="text" name="party_name" required placeholder="e.g. Al Noor Travel & Tours" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
-              </div>
-              <div>
-                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Agency Code (Optional)</label>
-                <input type="text" name="party_code" maxlength="10" placeholder="e.g. ANT001" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
-              </div>
+            <div class="mb-6">
+              <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">Agency / Company Name *</label>
+              <input type="text" name="party_name" required placeholder="e.g. Al Noor Travel & Tours" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
               <div>
@@ -812,11 +806,7 @@
               <span class="w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 text-xs flex items-center justify-center font-mono-custom">03</span>
               Legal & Identification <span id="b2bLabel" class="text-[10px] text-gold-500 bg-gold-500/10 px-2 py-0.5 rounded ml-2 hidden uppercase tracking-widest">Required for B2B</span>
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">GST Number <span class="gst-req hidden text-gold-500">*</span></label>
-                <input type="text" name="gst_number" id="gstInput" placeholder="GSTIN" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
-              </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label class="block font-mono-custom text-xs text-emerald-400 uppercase tracking-widest mb-2">PAN Number <span class="pan-req hidden text-gold-500">*</span></label>
                 <input type="text" name="pan_number" id="panInput" placeholder="PAN" class="w-full bg-white/5 border border-emerald-700/50 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-sm transition-all" />
@@ -1021,16 +1011,13 @@
     
     // Toggle labels and required indicators
     const b2bLabel = document.getElementById('b2bLabel');
-    const gstReqs = document.querySelectorAll('.gst-req');
     const panReqs = document.querySelectorAll('.pan-req');
     
     if (isB2B) {
       b2bLabel.classList.remove('hidden');
-      gstReqs.forEach(el => el.classList.remove('hidden'));
       panReqs.forEach(el => el.classList.remove('hidden'));
     } else {
       b2bLabel.classList.add('hidden');
-      gstReqs.forEach(el => el.classList.add('hidden'));
       panReqs.forEach(el => el.classList.add('hidden'));
     }
   }
@@ -1052,12 +1039,10 @@
     // Prepare the payload for the backend API
     const payload = {
       party_name: formData.get('party_name'),
-      party_code: formData.get('party_code') || null,
       email: formData.get('email'),
       contact_number: formData.get('contact_number') || null,
       whatsapp_number: formData.get('whatsapp_number'),
       address: formData.get('address') || null,
-      gst_number: formData.get('gst_number') || null,
       pan_number: formData.get('pan_number') || null,
       aadhaar_number: formData.get('aadhaar_number') || null,
       customer_type: customerType,
