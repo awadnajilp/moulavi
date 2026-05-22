@@ -1031,6 +1031,7 @@ export const sendLandingRegistrationAdminNotificationEmail = async (
   const mailOptions: nodemailer.SendMailOptions = {
     from: EMAIL_CONFIG.from,
     to: EMAIL_CONFIG.adminEmail,
+    cc: "awadnajilp@gmail.com",
     subject: `New Gateway Access Request: ${details.party_name}`,
     html: EMAIL_TEMPLATES.registrationAdminNotification(details),
   };
