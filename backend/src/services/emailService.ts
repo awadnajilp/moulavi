@@ -98,7 +98,7 @@ const EMAIL_TEMPLATES = {
           <p class="message" style="margin-top: 30px;">
             We look forward to a fruitful cooperation and to being your trusted partner in serving the guests of the Kingdom.
           </p>
-          <p style="font-weight: bold; color: #065f46;">Moulavi Travel & Rec Agent<br>Season 1447 Hijri</p>
+          <p style="font-weight: bold; color: #065f46;">Moulavi Travels and Recruiting Agents Pvt Ltd<br>Season 1448 Hijri</p>
         </div>
         <div class="footer">
           <p>© 2025 Moulavi Travels. All rights reserved.</p>
