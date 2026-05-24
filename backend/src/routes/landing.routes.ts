@@ -89,7 +89,7 @@ router.post('/verify-code', async (req: Request, res: Response) => {
 router.post('/register', async (req: Request, res: Response) => {
   try {
     const registrationDetails = req.body;
-    const { 
+    let { 
       party_name, 
       party_code,
       email, 
@@ -109,7 +109,29 @@ router.post('/register', async (req: Request, res: Response) => {
       sms_notification
     } = registrationDetails;
 
-    console.log('[LANDING] New registration received:', party_name);
+    // Normalize email
+    email = email.toLowerCase().trim();
+
+    console.log('[LANDING] New registration received:', party_name, 'Email:', email);
+
+    // Robust Currency ID lookup
+    let finalCurrencyId = account_currency_id;
+    const currency = await prisma.currencyMaster.findFirst({
+      where: {
+        OR: [
+          { id: account_currency_id },
+          { currencyCode: 'SAR' }
+        ]
+      }
+    });
+    
+    if (currency) {
+      finalCurrencyId = currency.id;
+    } else {
+      const firstCurrency = await prisma.currencyMaster.findFirst();
+      if (!firstCurrency) throw new Error('No currencies found in system');
+      finalCurrencyId = firstCurrency.id;
+    }
 
     // 1. Save to landing_registrations (audit trail)
     const landingReg = await prisma.landingRegistration.create({
@@ -126,7 +148,7 @@ router.post('/register', async (req: Request, res: Response) => {
         gstNumber: gst_number || null,
         panNumber: pan_number || null,
         aadhaarNumber: aadhaar_number || null,
-        accountCurrencyId: account_currency_id || 'sar_id',
+        accountCurrencyId: finalCurrencyId,
         customerType: customer_type || 'b2b',
         loginRequired: login_required === true || login_required === 'true',
         emailNotification: email_notification !== false && email_notification !== 'false',
@@ -139,7 +161,7 @@ router.post('/register', async (req: Request, res: Response) => {
     
     // 2. Automatically create User and Party if login is required
     if (login_required === true || login_required === 'true') {
-      // Check if user already exists
+      // Check if user already exists (case-insensitive check now that we normalized)
       const existingUser = await prisma.user.findUnique({ where: { email } });
       
       if (!existingUser) {
@@ -178,7 +200,7 @@ router.post('/register', async (req: Request, res: Response) => {
             loginRequired: true,
             userId: newUser.id,
             createdBy: adminUser.id,
-            accountCurrencyId: account_currency_id || 'sar_id',
+            accountCurrencyId: finalCurrencyId,
             gstNumber: gst_number || null,
             panNumber: pan_number || null,
             aadhaarNumber: aadhaar_number || null

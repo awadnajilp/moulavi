@@ -49,11 +49,7 @@ export default function Home() {
       toast.success(`Welcome back, ${user.name}!`);
       
       if (user.role === 'party') {
-        if (user.emailVerified === false) {
-          router.push('/verify-email');
-        } else {
-          router.push('/party/dashboard');
-        }
+        router.push('/party/dashboard');
       } else if (user.role === 'admin' || user.role === 'staff') {
         router.push('/dashboard');
       } else {

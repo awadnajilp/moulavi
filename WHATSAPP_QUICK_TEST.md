@@ -66,7 +66,7 @@ In Coolify, ensure these are set:
 
 - ✅ Correct: `919876543210` (91 + 10 digits)
 - ✅ Correct: `9876543210` (will auto-add 91)
-- ❌ Wrong: `+91 98765 43210` (spaces/special chars removed automatically)
+- ❌ Wrong: `+91 90044 81414` (spaces/special chars removed automatically)
 
 ## Common Test Types
 

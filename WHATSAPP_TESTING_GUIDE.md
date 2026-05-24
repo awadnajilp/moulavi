@@ -334,7 +334,7 @@ When you test WhatsApp messaging, you'll see detailed logs in Coolify. Here's wh
 ## Phone Number Format
 
 The system automatically formats phone numbers:
-- Input: `+91 98765 43210` → Output: `919876543210`
+- Input: `+91 90044 81414` → Output: `919876543210`
 - Input: `9876543210` → Output: `919876543210` (adds 91 prefix)
 - Input: `919876543210` → Output: `919876543210` (keeps as is)
 

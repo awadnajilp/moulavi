@@ -102,7 +102,7 @@ const EMAIL_TEMPLATES = {
         </div>
         <div class="footer">
           <p>© 2025 Moulavi Travels. All rights reserved.</p>
-          <p>info@moulavi.com | +91 9867650044</p>
+          <p>info@moulavi.com | +91 90044 81414</p>
         </div>
       </div>
     </body>
@@ -257,7 +257,7 @@ const EMAIL_TEMPLATES = {
           <div class="support-info">
             <p><strong>Need Help?</strong></p>
             <p>Our support team is available 24/7 to assist you with any questions or technical issues.</p>
-            <p>📧 Email: info@moulavi.com | 📞 Phone: +919867650044</p>
+            <p>📧 Email: info@moulavi.com | 📞 Phone: +9190044 81414</p>
           </div>
         </div>
         

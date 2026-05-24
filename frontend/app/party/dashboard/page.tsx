@@ -216,6 +216,29 @@ export default function PartyDashboardPage() {
       title="Agency Dashboard" 
       subtitle="Overview of your Umrah applications and performance"
     >
+      {/* Email Verification Warning */}
+      {user && !user.emailVerified && (
+        <div className="bg-orange-50 border-b border-orange-100 px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+              <Shield className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-orange-800 tracking-tight">Security Protocol: Email Not Verified</p>
+              <p className="text-xs text-orange-600 font-medium">Please verify your email to unlock full portal capabilities and secure your account.</p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => router.push('/verify-email')}
+            variant="outline" 
+            size="sm"
+            className="border-orange-200 text-orange-700 hover:bg-orange-100 hover:text-orange-800 font-bold h-8"
+          >
+            Verify Now
+          </Button>
+        </div>
+      )}
+
       {/* Hero / Welcome Section */}
       <div className="relative bg-gradient-to-r from-secondary to-[#112020] text-white px-8 py-10 overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
