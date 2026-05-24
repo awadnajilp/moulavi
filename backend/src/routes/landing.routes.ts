@@ -5,7 +5,7 @@ import {
   sendVerificationEmail 
 } from '../services/emailService';
 import { prisma } from '../lib/prisma';
-import bcrypt from 'bcrypt';
+import { hashPassword } from '../utils/password';
 import crypto from 'crypto';
 
 const router = Router();
@@ -167,7 +167,7 @@ router.post('/register', async (req: Request, res: Response) => {
       if (!existingUser) {
         // Generate secure random password
         generatedPassword = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 char hex
-        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+        const hashedPassword = await hashPassword(generatedPassword);
         
         // Find admin user for 'created_by' (needed by Party model)
         const adminUser = await prisma.user.findFirst({ where: { role: 'admin' } });
