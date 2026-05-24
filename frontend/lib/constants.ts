@@ -15,4 +15,4 @@ export const VISA_TYPE_CONFIG: Record<VisaType, { label: string; color: string }
   group_visa: { label: 'Group Visa', color: 'bg-green-50 text-green-900 border border-green-200' },
 };
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';

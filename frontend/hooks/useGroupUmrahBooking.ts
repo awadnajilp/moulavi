@@ -4,7 +4,7 @@ import { partyAPI } from '@/lib/api';
 import { API_ENDPOINTS } from '@/lib/umrah/constants';
 import { BookingState, MasterData, Step1Data, Step2Data, Step3Data, Step4Data, Step5Data } from '@/lib/umrah/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export const useGroupUmrahBooking = () => {
   const [bookingState, setBookingState] = useState<BookingState>({
