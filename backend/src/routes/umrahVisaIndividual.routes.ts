@@ -185,10 +185,25 @@ router.post('/step4', authenticate, async (req, res) => {
 });
 
 // POST /api/umrah-visa/create-booking - Create complete booking (all steps in one transaction)
-router.post('/create-booking', authenticate, uploadIndividual.single('panCardZipFile'), async (req, res) => {
+// POST /api/umrah-visa/create-booking - Create complete booking (all steps in one transaction)
+router.post('/create-booking', authenticate, uploadIndividual.fields([
+  { name: 'panCardZipFile', maxCount: 1 },
+  { name: 'documents', maxCount: 50 }
+]), async (req, res) => {
   try {
     const user = (req as any).user;
     
+    // Check file size limits for multiple documents (3MB each)
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    if (files && files['documents']) {
+      const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+      for (const file of files['documents']) {
+        if (file.size > MAX_FILE_SIZE) {
+          return res.status(400).json({ error: `File ${file.originalname} exceeds the 3MB size limit` });
+        }
+      }
+    }
+
     // Parse JSON strings from FormData (if FormData) or use req.body directly (if JSON)
     let step1Data, step2Data, step3Data, step4Data, step5Data: { movements?: any[] } | undefined, partyId;
     
@@ -241,20 +256,14 @@ router.post('/create-booking', authenticate, uploadIndividual.single('panCardZip
       return res.status(400).json({ error: 'Maximum 5 passengers allowed for iqama accommodation' });
     }
 
-    // Validate ZIP file upload (ONLY requirement, same as group booking)
-    const zipFile = req.file; // Multer provides the uploaded file
-    if (!zipFile) {
+    // Validate file upload (ZIP or Multiple files)
+    const zipFile = files?.['panCardZipFile']?.[0];
+    const multipleDocs = files?.['documents'];
+    
+    if (!zipFile && (!multipleDocs || multipleDocs.length === 0)) {
       return res.status(400).json({ 
-        error: 'ZIP file is required. Please upload a ZIP file containing all required documents.' 
+        error: 'Documents are required. Please upload a ZIP file or multiple images/PDFs.' 
       });
-    }
-
-    // Validate ZIP file type
-    const isValidZip = zipFile.mimetype === 'application/zip' || 
-                       zipFile.mimetype === 'application/x-zip-compressed' ||
-                       zipFile.originalname.toLowerCase().endsWith('.zip');
-    if (!isValidZip) {
-      return res.status(400).json({ error: 'Invalid file type. Please upload a ZIP file (.zip)' });
     }
 
     // Create passengers array from passengerCount (no individual names required, same as group booking)
@@ -510,8 +519,11 @@ router.post('/create-booking', authenticate, uploadIndividual.single('panCardZip
         toLocationId: string;
       }> = [];
 
-      // Helper: Find or create Viabadr city
+      // Helper: Find or create Viabadr city with local caching to prevent contention
+      const viabadrCache = new Map<string, string>();
       const getViabadrCityId = async (countryId: string): Promise<string> => {
+        if (viabadrCache.has(countryId)) return viabadrCache.get(countryId)!;
+
         // Try to find existing Viabadr city
         let viabadrCity = await prisma.cityMaster.findFirst({
           where: {
@@ -523,15 +535,28 @@ router.post('/create-booking', authenticate, uploadIndividual.single('panCardZip
 
         // If not found, create it (using the same country as Madinah)
         if (!viabadrCity) {
-          viabadrCity = await prisma.cityMaster.create({
-            data: {
-              name: 'Viabadr',
-              countryId: countryId,
-              isActive: true,
-            },
-          });
+          try {
+            viabadrCity = await prisma.cityMaster.create({
+              data: {
+                name: 'Viabadr',
+                countryId: countryId,
+                isActive: true,
+              },
+            });
+          } catch (createError) {
+            // Concurrent creation might fail on unique constraints, try to find again
+            viabadrCity = await prisma.cityMaster.findFirst({
+              where: {
+                name: { equals: 'Viabadr' },
+                countryId: countryId,
+                isActive: true,
+              },
+            });
+            if (!viabadrCity) throw createError;
+          }
         }
 
+        viabadrCache.set(countryId, viabadrCity.id);
         return viabadrCity.id;
       };
 
@@ -636,19 +661,39 @@ router.post('/create-booking', authenticate, uploadIndividual.single('panCardZip
         )
       );
 
-      // 7.5. Save ZIP file as Document (linked to booking, not individual passenger) - same as group booking
-      if (zipFile) {
-        const filePath = isS3Configured() ? (zipFile as any).location : zipFile.path;
-        
-        await tx.document.create({
-          data: {
+      // 7.5. Save uploaded files as Documents (linked to booking, not individual passenger)
+      const docsToCreate = [];
+
+      // Handle legacy ZIP file
+      if (files?.['panCardZipFile']?.[0]) {
+        const zFile = files['panCardZipFile'][0];
+        docsToCreate.push({
+          bookingId: booking.id,
+          documentType: 'pan_card_zip',
+          fileName: zFile.originalname,
+          filePath: isS3Configured() ? (zFile as any).location : zFile.path,
+          fileSize: zFile.size,
+          mimeType: zFile.mimetype || 'application/zip',
+        });
+      }
+
+      // Handle multiple documents
+      if (files?.['documents']) {
+        for (const f of files['documents']) {
+          docsToCreate.push({
             bookingId: booking.id,
-            documentType: 'pan_card_zip',
-            fileName: zipFile.originalname,
-            filePath: filePath, // S3 URL or local path
-            fileSize: zipFile.size,
-            mimeType: zipFile.mimetype,
-          },
+            documentType: 'general',
+            fileName: f.originalname,
+            filePath: isS3Configured() ? (f as any).location : f.path,
+            fileSize: f.size,
+            mimeType: f.mimetype,
+          });
+        }
+      }
+
+      if (docsToCreate.length > 0) {
+        await tx.document.createMany({
+          data: docsToCreate,
         });
       }
 

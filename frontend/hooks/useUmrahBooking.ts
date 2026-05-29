@@ -200,15 +200,23 @@ export const useUmrahBooking = () => {
         toast.success('Step 5 validated successfully');
         return true;
       }
-      // Step 6: Send ALL data to create-booking endpoint with ZIP file (FormData)
+      // Step 6: Send ALL data to create-booking endpoint with ZIP file or multiple documents (FormData)
       else if (stepNumber === 6) {
         // Create FormData for file upload
         const formData = new FormData();
         
-        // Add ZIP file if present
+        // Add ZIP file if present (legacy)
         const zipFile = bookingState.step6Data?.panCardZipFile;
         if (zipFile) {
           formData.append('panCardZipFile', zipFile);
+        }
+
+        // Add multiple documents if present (new feature)
+        const documents = (bookingState.step6Data as any)?.documents;
+        if (documents && Array.isArray(documents)) {
+          documents.forEach((file: File) => {
+            formData.append('documents', file);
+          });
         }
 
         // Add JSON data as string

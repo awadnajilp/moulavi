@@ -88,16 +88,16 @@ const groupStorage = isS3Configured()
 
 // Common file filter for both individual and group
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Allow ZIP files for PAN card uploads
-  if (file.fieldname === 'panCardZipFile') {
-    const allowedTypes = /zip|application\/zip|application\/x-zip-compressed/;
+  // Allow ZIP files for PAN card uploads (legacy/alternate support)
+  if (file.fieldname === 'panCardZipFile' || file.fieldname === 'documents') {
+    const allowedTypes = /zip|application\/zip|application\/x-zip-compressed|jpeg|jpg|png|pdf/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
     if (mimetype || extname || file.originalname.toLowerCase().endsWith('.zip')) {
       return cb(null, true);
     } else {
-      cb(new Error('Only ZIP files are allowed for PAN card upload'));
+      cb(new Error('Only ZIP, images (JPEG, JPG, PNG) and PDF files are allowed'));
     }
     return;
   }
@@ -117,13 +117,17 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 // Export separate upload middlewares for individual and group bookings
 export const uploadIndividual = multer({ 
   storage: individualStorage,
-  limits: { fileSize: Infinity }, // No file size limit - removed as per user requirement
+  limits: { 
+    fileSize: Infinity // Individual file limit will be checked in the route/frontend
+  },
   fileFilter,
 });
 
 export const uploadGroup = multer({ 
   storage: groupStorage,
-  limits: { fileSize: Infinity }, // No file size limit - removed as per user requirement
+  limits: { 
+    fileSize: Infinity
+  },
   fileFilter,
 });
 

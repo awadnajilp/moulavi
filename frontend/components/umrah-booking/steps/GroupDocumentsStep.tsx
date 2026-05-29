@@ -1,14 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
-import { UploadCloud, File, X } from 'lucide-react';
+import { UploadCloud, File, X, Eye, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import { Step5Data, Step1Data, Step3Data } from '@/lib/umrah/types';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface GroupDocumentsStepProps {
-  data: Step5Data;
+  data: Step5Data & { documents?: File[] };
   step1Data: Step1Data;
   step3Data: Step3Data;
-  onChange: (data: Partial<Step5Data>) => void;
+  onChange: (data: Partial<Step5Data | { documents: File[] }>) => void;
   onStep1DataChange: (data: Partial<Step1Data>) => void;
   onAddPassenger: () => void;
   onRemovePassenger: (index: number) => void;
@@ -25,22 +28,40 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Get the uploaded ZIP file from step5Data
-  const zipFile = data.panCardZipFile || null;
+  // Get uploaded files
+  const uploadedFiles = data.documents || [];
 
-  const handleFileSelect = (file: File) => {
-    // Validate file type - accept ZIP files or allow multiple files
-    const isValidZip = file.type === 'application/zip' || file.name.toLowerCase().endsWith('.zip');
-    
-    if (!isValidZip) {
-      alert('Please upload a ZIP file (.zip) containing all PAN cards');
-      return;
+  const handleFilesSelect = (newFiles: FileList | File[]) => {
+    const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+    const validFiles: File[] = [...uploadedFiles];
+    let hasError = false;
+
+    Array.from(newFiles).forEach(file => {
+      // Validate file type
+      const isValidType = /jpeg|jpg|png|pdf|zip/.test(file.type) || 
+                          file.name.toLowerCase().endsWith('.zip') ||
+                          file.name.toLowerCase().endsWith('.pdf') ||
+                          /\.(jpg|jpeg|png)$/i.test(file.name);
+      
+      if (!isValidType) {
+        toast.error(`${file.name} is not a valid file type. Please upload images, PDFs or ZIP.`);
+        hasError = true;
+        return;
+      }
+
+      // Validate size
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} exceeds the 3MB size limit.`);
+        hasError = true;
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    if (validFiles.length > 0) {
+      onChange({ documents: validFiles });
     }
-
-    // No max size validation - removed as per user requirement
-
-    // Store the file in step4Data
-    onChange({ panCardZipFile: file } as any);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -49,7 +70,7 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFileSelect(files[0]);
+      handleFilesSelect(files);
     }
   };
 
@@ -66,105 +87,141 @@ export const GroupDocumentsStep: React.FC<GroupDocumentsStepProps> = ({
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      handleFileSelect(files[0]);
+      handleFilesSelect(files);
     }
   };
 
-  const handleRemoveFile = () => {
-    onChange({ panCardZipFile: null } as any);
-    if (fileInputRef.current) {
+  const handleRemoveFile = (index: number) => {
+    const updatedFiles = [...uploadedFiles];
+    updatedFiles.splice(index, 1);
+    onChange({ documents: updatedFiles });
+    if (updatedFiles.length === 0 && fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h4 className="font-medium text-gray-900">PAN Cards Upload</h4>
-        <p className="text-sm text-gray-600">
-          Upload a ZIP file containing all PAN cards for the group passengers
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Sample Image - Displayed above upload */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="h-0.5 w-4 bg-primary rounded-full" />
+          <h5 className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">Sample Documentation</h5>
+        </div>
+        <div className="relative w-full rounded-2xl overflow-hidden shadow-sm border-4 border-white bg-gray-100 group transition-all hover:shadow-md">
+          <Image
+            src="/documentdemo.jpeg"
+            alt="Sample Documents Guide"
+            width={1200}
+            height={400}
+            className="w-full h-auto object-cover max-h-[250px]"
+            unoptimized
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:items-start gap-1 border-b border-secondary/10 pb-4">
+        <h4 className="text-lg font-bold text-primary uppercase tracking-tight">PAN Cards Upload</h4>
+        <p className="text-[10px] text-muted-foreground font-medium opacity-60">
+          Upload individual images, PDFs or a ZIP file containing all PAN cards (Max 3MB per file)
         </p>
       </div>
 
-      <Card className="p-6">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Upload Area */}
-          {!zipFile ? (
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                isDragging
-                  ? 'border-primary bg-destructive/5'
-                  : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-destructive/5/50'
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip,application/zip"
-                onChange={handleFileInputChange}
-                disabled={disabled}
-                className="hidden"
-              />
-              
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <UploadCloud className={`w-16 h-16 ${isDragging ? 'text-primary' : 'text-gray-400'}`} />
-                <div>
-                  <p className="text-lg font-medium text-gray-700 mb-1">
-                    {isDragging ? 'Drop your ZIP file here' : 'Click to upload or drag and drop'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    ZIP file containing all PAN cards
-                  </p>
-                </div>
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "relative group overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-700 cursor-pointer min-h-[150px] flex items-center justify-center",
+              isDragging
+                ? "bg-primary/5 border-primary shadow-lg scale-[1.01]"
+                : "bg-gray-50/50 border-secondary/20 hover:bg-white hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5"
+            )}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.zip"
+              onChange={handleFileInputChange}
+              disabled={disabled}
+              className="hidden"
+            />
+            
+            <div className="flex flex-col items-center justify-center p-6 text-center">
+              <div className={cn(
+                "h-10 w-10 rounded-xl flex items-center justify-center mb-3 transition-all duration-700 shadow-md",
+                isDragging 
+                  ? "bg-primary text-white" 
+                  : "bg-white text-secondary border border-secondary/10 group-hover:bg-primary group-hover:text-white"
+              )}>
+                <UploadCloud className="h-5 w-5" />
               </div>
+              <p className="text-sm font-bold text-primary tracking-tight mb-0.5 uppercase">
+                {isDragging ? 'Drop files now' : 'Click to upload multiple files'}
+              </p>
+              <p className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                Images, PDFs or ZIP (Max 3MB each)
+              </p>
             </div>
-          ) : (
-            <div className="border-2 border-green-200 bg-green-50 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <File className="w-8 h-8 text-green-600" />
+          </div>
+
+          {/* File List */}
+          {uploadedFiles.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold text-primary/40 uppercase tracking-widest mb-3">Attached Files ({uploadedFiles.length})</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="p-3 rounded-xl bg-white border border-secondary/10 shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all animate-in slide-in-from-left-2 duration-300">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                        {file.name.toLowerCase().endsWith('.pdf') ? <FileText className="h-4 w-4" /> : <File className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-primary truncate uppercase tracking-tight">{file.name}</p>
+                        <p className="text-[8px] text-muted-foreground font-medium">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleRemoveFile(index); }}
+                      className="h-6 w-6 rounded-full hover:bg-destructive/10 flex items-center justify-center text-destructive/40 hover:text-destructive transition-all"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{zipFile.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {(zipFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveFile}
-                  disabled={disabled}
-                  className="text-primary hover:text-destructive hover:bg-destructive/5"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Remove
-                </Button>
+                ))}
               </div>
             </div>
           )}
+        </div>
 
-          {/* Instructions */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h6 className="font-medium text-blue-900 mb-2">Instructions:</h6>
-            <ul className="space-y-1 text-sm text-blue-800 list-disc list-inside">
-              <li>Create a ZIP file containing all PAN card images/PDFs</li>
-              <li>Name each file clearly (e.g., passenger-name-pan.pdf)</li>
-              <li>Supported formats inside ZIP: PNG, JPG, PDF</li>
-            </ul>
-            <p className="text-xs text-blue-700 mt-2">
-              The ZIP file will be stored and can be downloaded later from the admin dashboard.
-            </p>
+        {/* Instructions Sidebar - Compact */}
+        <div className="space-y-4">
+          <div className="p-5 rounded-2xl bg-[#0B1120] text-white space-y-4 shadow-xl relative overflow-hidden group">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                 <div className="h-0.5 w-4 bg-secondary rounded-full" />
+                 <h6 className="text-[9px] font-bold text-secondary uppercase tracking-[0.2em]">Important Instructions</h6>
+              </div>
+              <p className="text-[11px] font-medium text-gray-300 leading-relaxed italic border-l-2 border-secondary/30 pl-3 py-0.5">
+                "Ensure all PAN cards for the group are attached. Submissions without proper documentation will be subject to cancellation."
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-white/5 relative z-10">
+              <p className="text-[9px] text-gray-500 font-bold leading-relaxed uppercase tracking-widest text-center">
+                Supported formats: PNG, JPG, PDF, ZIP
+              </p>
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

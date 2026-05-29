@@ -407,23 +407,27 @@ export const validateStep5Movements = (
 };
 
 // For individual bookings: Step 6 is documents
-export const validateStep6 = (data: Step6Data, step1Data: Step1Data, step3Data: Step3Data, isGroupVisa: boolean = false): string | null => {
-  // ONLY ZIP file is required
+export const validateStep6 = (data: Step6Data & { documents?: File[] }, step1Data: Step1Data, step3Data: Step3Data, isGroupVisa: boolean = false): string | null => {
+  // Either ZIP file or multiple individual files are required
   const zipFile = data?.panCardZipFile;
-  if (!zipFile) {
-    return 'Please upload a ZIP file containing all required documents';
+  const individualDocs = data?.documents;
+  
+  if (!zipFile && (!individualDocs || individualDocs.length === 0)) {
+    return 'Please upload required documents (ZIP file or multiple images/PDFs)';
   }
 
-  // Validate ZIP file type
-  const isValidZip = zipFile.type === 'application/zip' || zipFile.name.toLowerCase().endsWith('.zip');
-  if (!isValidZip) {
-    return 'Please upload a valid ZIP file (.zip)';
-  }
+  // If ZIP is provided, validate it
+  if (zipFile) {
+    const isValidZip = zipFile.type === 'application/zip' || zipFile.name.toLowerCase().endsWith('.zip');
+    if (!isValidZip) {
+      return 'Please upload a valid ZIP file (.zip)';
+    }
 
-  // Validate ZIP file size (max 50MB)
-  const maxSize = 50 * 1024 * 1024; // 50MB
-  if (zipFile.size > maxSize) {
-    return 'ZIP file size exceeds 50MB limit. Please compress your files.';
+    // Validate ZIP file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (zipFile.size > maxSize) {
+      return 'ZIP file size exceeds 50MB limit. Please compress your files.';
+    }
   }
   
   return null; // All validations passed

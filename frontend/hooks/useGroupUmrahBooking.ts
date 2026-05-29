@@ -304,10 +304,18 @@ export const useGroupUmrahBooking = () => {
       // Create FormData for file upload
       const formData = new FormData();
       
-      // Add ZIP file if present
+      // Add ZIP file if present (legacy)
       const zipFile = bookingState.step5Data.panCardZipFile;
       if (zipFile) {
         formData.append('panCardZipFile', zipFile);
+      }
+
+      // Add multiple documents if present (new feature)
+      const documents = (bookingState.step5Data as any)?.documents;
+      if (documents && Array.isArray(documents)) {
+        documents.forEach((file: File) => {
+          formData.append('documents', file);
+        });
       }
 
       // Add JSON data as string
